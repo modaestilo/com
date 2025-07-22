@@ -17,6 +17,9 @@
 
 }
 
+html {
+  scroll-behavior: smooth;
+}
 
 
 /* ===================================
@@ -147,9 +150,9 @@ header h1 {
   padding: 0.7rem 1rem 0.7rem 2.5rem;
   font-size: 1rem;
   border-radius: 12px;
-  border: 1px solid #a3a0a0;
-  background-color: #eae0e6;
-  color: white;
+  border: 2px solid #000000;
+  background-color: #e9e7e8;
+  color: rgb(0, 0, 0);
   outline: none;
 }
 
@@ -171,18 +174,17 @@ header h1 {
 /* ===================================
    🛍 PRODUCTOS
 =================================== */
+/* 📦 Contenedor de producto */
 .producto {
   background-color: #fff;
-  border-radius: 16px;
+  border-radius: 20px;
   box-shadow: var(--sombra-suave);
-  max-width: 320px;
-  padding: 1.5rem;
-  margin: 1rem auto;
+  max-width: 480px;
+  padding: 0.8rem;
+  margin: 2rem auto;
   text-align: center;
   transition: var(--trans);
 }
-
-
 
 .producto:hover {
   transform: translateY(-8px);
@@ -191,26 +193,39 @@ header h1 {
 
 .contenedor-img {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 12px;
-  margin-bottom: 1rem;
-  background-color: #f8f8f8; /* para rellenar el fondo */
+  background-color: #f8f8f8;
   display: flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%; /* 🔧 importante en móviles */
 }
 
-.contenedor-img .main-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* 👈 mostrar toda la imagen sin recorte */
+.contenedor-img img.main-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   display: block;
 }
 
 
 
+@media (max-width: 600px) {
+  .contenedor-img {
+    width: 100vw;        /* ocupar todo el ancho de pantalla */
+    max-width: 100%;
+    aspect-ratio: 1 / 1; /* mantiene forma cuadrada */
+    margin: 0 auto;
+  }
+}
 
+
+
+/* 🧠 Tipografía y estilos del producto */
 .producto h2 {
   font-size: clamp(1.2rem, 2vw, 1.4rem);
   margin: 0.5rem 0;
@@ -229,14 +244,56 @@ header h1 {
   font-size: 1.15rem;
 }
 
-@media (max-width: 480px) {
-  .contenedor-productos {
-    grid-template-columns: 1fr;
-    padding: 1rem;
-  }
 
-  .producto {
-    margin: 0 auto;
+
+
+/* ===================================
+   🏷 DESCRIPCIÓN DEL PRODUCTO
+   =================================== */
+
+/* Contenedor principal de la descripción */
+.descripcion-expandible {
+  margin: 0.5rem 0;
+}
+
+/* Texto de la descripción oculto por defecto */
+.descripcion-texto {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #060606;
+  margin-top: 0.5rem;
+  display: none;
+}
+
+/* Clase que se agrega para mostrar el texto con animación */
+.descripcion-texto.mostrar {
+  display: block;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Botón para mostrar/ocultar descripción */
+.btn-ver-descripcion {
+  background: none;
+  border: none;
+  color: #000000;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.btn-ver-descripcion:hover {
+  text-decoration: underline;
+}
+
+/* Animación para mostrar el texto suavemente */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -368,8 +425,9 @@ button:hover {
   display: block;
   margin: 1.2rem auto 0;
   background: #000;
-  color: #fff;
-  border-radius: 14px;
+  color: #ffffff;  /*blanco*/
+  border-radius: var(--borde-radius);
+
   max-width: 280px;
   box-shadow: 0 6px 18px rgba(255, 255, 255, 0.2);
 }
@@ -383,6 +441,7 @@ button:hover {
 /* ===================================
    🛒 CARRITO
 =================================== */
+
 .icono-carrito-fijo {
   position: fixed;
   top: 56px;
@@ -391,7 +450,6 @@ button:hover {
   height: 47px;
   font-size: 1.6rem;
   background-color: #000000;
- 
   border-radius: 50%;
   display: flex;
   justify-content: center;
@@ -404,7 +462,7 @@ button:hover {
 
 .icono-carrito-fijo.ver-carrito:hover {
   background-color: #313030;
-  color: rgb(255, 255, 255);
+  color: #fff;
 }
 
 .icono-carrito-fijo.ocultar-carrito:hover {
@@ -412,6 +470,7 @@ button:hover {
   color: #131aeb;
 }
 
+/* 🧾 Panel del carrito */
 #bloqueCarrito.container {
   position: fixed;
   top: 0;
@@ -427,10 +486,12 @@ button:hover {
   transform: translateX(100%); /* Oculto por defecto */
 }
 
+/* Mostrar carrito */
 #bloqueCarrito.container.mostrar {
-  transform: translateX(0); /* Visible cuando tiene .mostrar */
+  transform: translateX(0);
 }
 
+/* Ocultar carrito completamente */
 #bloqueCarrito.container.oculto {
   display: none;
 }
@@ -446,10 +507,10 @@ button:hover {
 }
 
 .cerrar-carrito:hover {
-  color: rgb(0, 0, 0);
+  color: #000;
 }
 
-
+/* Total del carrito */
 .total-carrito {
   text-align: right;
   font-size: 1.2rem;
@@ -462,6 +523,7 @@ button:hover {
   color: #28a745;
 }
 
+/* Estilos para los items dentro del carrito */
 .item-carrito-elegante .info-superior {
   display: flex;
   justify-content: space-between;
@@ -473,17 +535,50 @@ button:hover {
   font-size: 1.1rem;
 }
 
-
-
-
-
-
-#bloqueCarrito.oculto {
-  display: none;
+.item-carrito-elegante p {
+  font-size: 1rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
 }
-#bloqueCarrito.mostrar {
-  display: block; /* o flex/grid, según tu diseño */
+
+.item-carrito-elegante strong {
+  display: inline-block;
+  font-weight: bold;
+  max-width: 100%;
 }
+
+/* Corrección para pantallas pequeñas */
+@media (max-width: 480px) {
+  .item-carrito-elegante p {
+    white-space: normal;
+    word-break: break-word;
+    font-size: 1.1rem;
+  }
+}
+
+.opciones-cantidad {
+  margin: 4px 0;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.opciones-cantidad label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.select-cantidad {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
 
 /* ================================
    📋 FORMULARIO DE COMPRA CLIENTE
@@ -650,15 +745,7 @@ body.dark-mode button {
 /* ===================================
    📱 MEDIA QUERIES
 =================================== */
-@media (max-width: 768px) {
-  .producto {
-    width: 90%;
-  }
 
-  .carrusel-scroll > * {
-    flex: 0 0 30%;
-  }
-}
 
 @media (max-width: 480px) {
   header {
@@ -684,7 +771,8 @@ body.dark-mode button {
   }
 
   .main-img {
-    max-height: 160px;
+  height: 100%;  /* ✅ Opcional: asegura que ocupe todo el contenedor */
+
   }
 
   .talla-item,
@@ -696,7 +784,7 @@ body.dark-mode button {
   .btn-agregar {
     font-size: 1rem;
     padding: 0.85rem 1.2rem;
-    max-width: 100%;
+    max-width: 95%;
   }
 }
 
@@ -776,8 +864,8 @@ body.dark-mode button {
 }
 
 .miniatura {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
@@ -797,4 +885,34 @@ body.dark-mode button {
 @keyframes scrollInfinite {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+/* ===================================
+   🏷 carrusel de descuento
+=================================== */
+
+.carrusel-letrero {
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #000000;
+  padding: 0.4rem 0;
+  margin: 0.6rem auto;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border-radius: 8px;
+  max-width: 100%;
+  text-align: center;
+}
+
+.carrusel-letrero p {
+  display: inline-block;
+  padding-left: 100%;
+  animation: deslizarLetrero 15s linear infinite;
+}
+
+@keyframes deslizarLetrero {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }

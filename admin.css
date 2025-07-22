@@ -239,3 +239,20 @@ button.btn-verde {
 button.btn-verde:hover {
   background-color: var(--color-verde-hover) !important;
 }
+
+
+
+.lista-productos-admin {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lista-productos-admin div {
+  padding: 1rem;
+  border-radius: 8px;
+  background: #f4f4f4;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+

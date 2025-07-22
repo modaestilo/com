@@ -1,36 +1,84 @@
+// ✅ Configuración de Firebase ya personalizada
 
- const firebaseConfig = {
-  apiKey: "AIzaSyBV8-3IEMPuP0C9mlt5n4NsZe1z3TKuvy4",
-  authDomain: "modaestiloco.firebaseapp.com",
-  projectId: "modaestiloco",
-  storageBucket: "modaestiloco.firebasestorage.app",
-  messagingSenderId: "136442859187",
-  appId: "1:136442859187:web:9768e10060f45a9543eac6",
-  measurementId: "G-6PZM6CND29"
+    // ✅ Configuración de Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCozJXTEJct407_E6CpjLSK6EOZgk-W8fc",
+  authDomain: "modaestil0.firebaseapp.com",
+  projectId: "modaestil0",
+  storageBucket: "modaestil0.appspot.com",
+  messagingSenderId: "277454254263",
+  appId: "1:277454254263:web:8de217a8c39e25ad1d1d32"
 };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
 
-    function loginFirebase() {
-      const correo = document.getElementById("correo").value;
-      const clave = document.getElementById("clave").value;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+ 
 
-      auth.signInWithEmailAndPassword(correo, clave)
-        .then(() => {
-          document.getElementById("login").style.display = "none";
-          document.getElementById("admin").style.display = "block";
-          cargarProductos();
-          cargarConfiguracion();
-          cargarMetodosPago(); // ✅ Agrega esta línea aquí
-          cargarTextoQuienesSomos();
-         mostrarVistaPreviaGaleria();
 
-        })
-        .catch(err => {
-          alert("❌ Error: " + err.message);
-        });
+firebase.auth().onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("admin").style.display = "block";
+
+    // Reiniciar botón a modo "Agregar"
+    const boton = document.querySelector("#seccion-productos .btn-verde");
+    if (boton) {
+      boton.textContent = "Agregar producto";
+      boton.onclick = agregarProducto;
     }
+cargarProductos(); // ✅ Carga los productos al iniciar sesión
+
+  } else {
+    document.getElementById("login").style.display = "block";
+    document.getElementById("admin").style.display = "none";
+  }
+});
+
+
+
+const productosCollection = db.collection("productos");
+
+function loginFirebase() {
+  const email = document.getElementById("correo").value.trim();
+  const clave = document.getElementById("clave").value.trim();
+
+  firebase.auth().signInWithEmailAndPassword(email, clave)
+    .then(() => {
+      document.getElementById("login").style.display = "none";
+      document.getElementById("admin").style.display = "block";
+    })
+    .catch(error => {
+      alert("Error de acceso: " + error.message);
+    });
+}
+
+
+const user = firebase.auth().currentUser;
+if (user) {
+  const nombreUsuario = document.createElement("p");
+  nombreUsuario.textContent = `👋 Bienvenido, ${user.email}`;
+  document.getElementById("admin").prepend(nombreUsuario);
+}
+
+
+function cerrarSesion() {
+  firebase.auth().signOut().then(() => {
+    document.getElementById("admin").style.display = "none";
+    document.getElementById("login").style.display = "block";
+  });
+}
+
+function mostrarSeccion(id) {
+  document.querySelectorAll(".seccion").forEach(seccion => {
+    seccion.classList.remove("activa");
+  });
+
+  const activa = document.getElementById(`seccion-${id}`);
+  if (activa) {
+    activa.classList.add("activa");
+  }
+}
+
 
     function toggleConfiguracionFooter() {
       const seccion = document.getElementById("configuracion-footer");
@@ -68,39 +116,212 @@
   preview.src = ''; // Limpia si no hay imagen válida
 }
 
-
-    function mostrarSeccion(id) {
-  const seccion = document.getElementById("seccion-" + id);
-
-  if (seccion.classList.contains("activa")) {
-    // Si ya está visible, la ocultamos
-    seccion.classList.remove("activa");
-  } else {
-    // Si no está visible, primero ocultamos las demás y luego mostramos esta
-    document.querySelectorAll('.seccion').forEach(div => div.classList.remove('activa'));
-    seccion.classList.add("activa");
-  }
-}
-
-
+// ✅ Versión corregida de agregarProducto()
 function agregarProducto() {
   const nombre = document.getElementById("nuevoNombre").value.trim();
-  const precio = parseInt(document.getElementById("nuevoPrecio").value);
-  const precioOriginal = parseInt(document.getElementById("nuevoPrecioOriginal").value);
-  const imagenInput = document.getElementById("nuevoImagenes").value.trim();
-  const color = document.getElementById("nuevoColor").value.trim().toLowerCase();
-  const tallas = document.getElementById("nuevoTallas").value
-    .split(',')
-    .map(t => t.trim())
-    .filter(t => t !== "");
+  const precioOriginal = parseInt(document.getElementById("precioOriginal").value);
+  const descuento = parseInt(document.getElementById("descuento").value) || 0;
+  const descripcion = document.getElementById("descripcion").value.trim();
+  const colorPrincipal = document.getElementById("colorPrincipal").value.trim();
+  const tallas = document.getElementById("tallas").value.trim().split(",").map(t => t.trim()).filter(t => t);
+  const imagenesInput = document.getElementById("imagenes").value.trim();
 
-  // Validaciones
-  if (!nombre || isNaN(precio) || isNaN(precioOriginal) || !imagenInput || !color || tallas.length === 0) {
-    alert("❌ Por favor completa todos los campos correctamente.");
+  const precio = Math.round(precioOriginal * (1 - descuento / 100));
+
+  if (!nombre || isNaN(precioOriginal) || !colorPrincipal || !imagenesInput || tallas.length === 0) {
+    alert("❌ Todos los campos son obligatorios.");
     return;
   }
 
-  // Procesar imágenes (esperando formato: rojo|URL, azul|URL)
+  const imagenesPorColor = {};
+  imagenesInput.split(",").forEach(url => {
+    const [color, link] = url.trim().split("|");
+    if (color && link) {
+      imagenesPorColor[color.trim()] = link.trim();
+    }
+  });
+
+  if (Object.keys(imagenesPorColor).length === 0) {
+    alert("❌ Debes ingresar al menos una imagen válida en formato color|url");
+    return;
+  }
+
+  const preciosPorCantidad = {};
+  document.querySelectorAll("#preciosPorCantidad input").forEach(input => {
+    const cantidad = input.dataset.cantidad;
+    const valor = input.value.trim();
+    if (valor) {
+      preciosPorCantidad[cantidad] = parseInt(valor);
+    }
+  });
+
+  const producto = {
+    nombre,
+    precio,
+    precioOriginal,
+    descuento,
+    descripcion,
+    colorPrincipal,
+    imagenes: imagenesPorColor,
+    tallas,
+    colores: Object.keys(imagenesPorColor),
+    preciosPorCantidad,
+    fecha: new Date().toISOString() // ✅ AGREGADO para ordenar productos por fecha
+  };
+
+  db.collection("productos").add(producto)
+    .then(() => {
+      alert("✅ Producto agregado correctamente.");
+      document.getElementById("nuevoNombre").value = "";
+      document.getElementById("precioOriginal").value = "";
+      document.getElementById("descuento").value = "";
+      document.getElementById("descripcion").value = "";
+      document.getElementById("colorPrincipal").value = "";
+      document.getElementById("tallas").value = "";
+      document.getElementById("imagenes").value = "";
+      document.querySelectorAll("#preciosPorCantidad input").forEach(i => i.value = "");
+
+      obtenerProductos();
+    })
+    .catch(error => {
+      console.error("Error al agregar producto:", error);
+      alert("❌ Ocurrió un error al agregar el producto.");
+    });
+}
+
+
+    function eliminarProducto(id) {
+      if (confirm("¿Eliminar este producto?")) {
+        db.collection("productos").doc(id).delete()
+          .then(() => alert("✅ Producto eliminado."))
+          .catch(err => alert("❌ Error al eliminar: " + err.message));
+      }
+    }
+
+function limpiarFormularioProducto() {
+  document.getElementById("nuevoNombre").value = "";
+  document.getElementById("nuevoPrecio").value = "";
+  document.getElementById("nuevoPrecioOriginal").value = "";
+  document.getElementById("nuevoImagenes").value = "";
+  document.getElementById("nuevoColor").value = "";
+  document.getElementById("nuevoTallas").value = "";
+  document.getElementById("nuevoDescripcion").value = "";
+  document.getElementById("nuevoPreciosCantidad").value = "";
+  document.getElementById("preview").src = "";
+}
+
+
+    function cargarProductos() {
+      db.collection("productos").onSnapshot(snapshot => {
+        const contenedor = document.getElementById("productos");
+        contenedor.innerHTML = "";
+
+        snapshot.forEach(doc => {
+          const p = doc.data();
+          const div = document.createElement("div");
+          div.className = "producto-item";
+         div.innerHTML = `
+  <strong>${p.nombre}</strong><br>
+  💰 Precio: ${
+  p.precio !== null
+    ? `$${p.precio.toLocaleString()} - <s>$${p.precioOriginal.toLocaleString()}</s>`
+    : `$${p.precioOriginal.toLocaleString()}`
+}
+
+  
+  <p style="font-size: 14px; margin: 5px 0;">📝 ${p.descripcion || "Sin descripción"}</p>
+
+  <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding: 5px 0;">
+    🎨 ${Object.keys(p.imagenes).map(color =>
+      `<div style="display: inline-block; text-align: center;">
+        <img src="${p.imagenes[color]}" alt="${color}" style="height: 50px; border-radius: 6px;"><br>
+        <span style="font-size: 12px;">${color}</span>
+      </div>`).join('')}
+  </div>
+
+  <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding: 5px 0;">
+    📏 ${p.tallas.map(t => `
+      <span style="display: inline-block; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 14px;">
+        ${t}
+      </span>`).join('')}
+  </div>
+
+<div class="acciones">
+  <button class="btn-verde" onclick="editarProducto('${doc.id}')">✏️ Editar</button>
+  <button class="btn-rojo" onclick="eliminarProducto('${doc.id}')">❌ Eliminar</button>
+</div>
+
+<p style="font-size: 13px; color: #333;">📦 Precios por cantidad:<br>
+  ${p.preciosPorCantidad ? Object.entries(p.preciosPorCantidad).map(([k, v]) => `${k} par${k > 1 ? 'es' : ''}: $${v.toLocaleString()}`).join(" | ") : "Ninguno"}
+</p>
+
+
+`;
+          contenedor.appendChild(div);
+        });
+      });
+    }
+
+
+function editarProducto(id) {
+  db.collection("productos").doc(id).get().then(doc => {
+    if (!doc.exists) {
+      alert("❌ Producto no encontrado.");
+      return;
+    }
+
+    const p = doc.data();
+
+    // Rellenar el formulario con los datos del producto
+    document.getElementById("nuevoNombre").value = p.nombre;
+    document.getElementById("nuevoPrecio").value = p.precio;
+    document.getElementById("nuevoPrecioOriginal").value = p.precioOriginal;
+    document.getElementById("nuevoColor").value = p.color;
+    document.getElementById("nuevoTallas").value = p.tallas.join(", ");
+    document.getElementById("nuevoDescripcion").value = p.descripcion || "";
+document.getElementById("nuevoPreciosCantidad").value = p.preciosPorCantidad
+  ? Object.entries(p.preciosPorCantidad).map(([k, v]) => `${k}=${v}`).join(",")
+  : "";
+
+    // Convertir imágenes a formato editable
+    const imagenesStr = Object.entries(p.imagenes).map(([color, url]) => `${color}|${url}`).join(", ");
+    document.getElementById("nuevoImagenes").value = imagenesStr;
+    actualizarPreview();
+
+    // Cambiar botón a modo editar
+    const boton = document.querySelector("button.btn-verde");
+    boton.textContent = "💾 Guardar Cambios";
+    boton.onclick = () => guardarCambiosProducto(id);
+  });
+}
+
+function guardarCambiosProducto(id) {
+  const nombre = document.getElementById("nuevoNombre").value.trim();
+  const precio = parseFloat(document.getElementById("nuevoPrecio").value);
+
+  const precioOriginal = parseInt(document.getElementById("nuevoPrecioOriginal").value);
+  const imagenInput = document.getElementById("nuevoImagenes").value.trim();
+  const color = document.getElementById("nuevoColor").value.trim().toLowerCase();
+  const tallas = document.getElementById("nuevoTallas").value.split(',').map(t => t.trim()).filter(t => t !== "");
+  const descripcion = document.getElementById("nuevoDescripcion").value.trim();
+const preciosCantidadTexto = document.getElementById("nuevoPreciosCantidad").value.trim();
+let preciosPorCantidad = {};
+if (preciosCantidadTexto) {
+  preciosCantidadTexto.split(',').forEach(par => {
+    const [cant, valor] = par.split('=').map(s => s.trim());
+    if (!isNaN(cant) && !isNaN(valor)) {
+      preciosPorCantidad[cant] = parseInt(valor);
+    }
+  });
+}
+
+  // Validaciones
+  if (!nombre || isNaN(precioOriginal) || !imagenInput || !color || tallas.length === 0 || !descripcion) {
+  alert("❌ Por favor completa todos los campos obligatorios (excepto el precio con descuento).");
+  return;
+}
+
+
   const imagenes = {};
   const entradas = imagenInput.split(",");
   let imagenPrincipal = "";
@@ -118,79 +339,47 @@ function agregarProducto() {
     return;
   }
 
-  const data = {
-    nombre,
-    precio,
-    precioOriginal,
-    imagen: imagenPrincipal,
-    color,
-    tallas,
-    imagenes
-  };
+const data = {
+  nombre,
+  precio: isNaN(precio) ? null : precio, // ✅ aquí es opcional
+  precioOriginal,
+  imagen: imagenPrincipal,
+  color,
+  tallas,
+  imagenes,
+  descripcion,
+  preciosPorCantidad
+};
 
-  db.collection("productos").add(data)
+
+
+  db.collection("productos").doc(id).set(data)
     .then(() => {
-      alert("✅ Producto agregado correctamente.");
+      alert("✅ Producto actualizado correctamente.");
+
+      // Restaurar estado inicial
       document.getElementById("nuevoNombre").value = "";
-      document.getElementById("nuevoPrecio").value = "";
+      document.getElementById("nuevoPrecio").value = isNaN(precio) ? "" : precio;
+
       document.getElementById("nuevoPrecioOriginal").value = "";
       document.getElementById("nuevoImagenes").value = "";
       document.getElementById("nuevoColor").value = "";
       document.getElementById("nuevoTallas").value = "";
+      document.getElementById("nuevoDescripcion").value = "";
+      document.getElementById("nuevoPreciosCantidad").value = "";
+
       document.getElementById("preview").src = "";
+
+      // Restaurar botón a modo agregar
+      const boton = document.querySelector("button.btn-verde");
+      boton.textContent = "Agregar Producto";
+      boton.onclick = agregarProducto;
     })
     .catch(err => {
-      console.error("❌ Error al agregar producto:", err);
-      alert("❌ Ocurrió un error al guardar el producto.");
+      console.error("❌ Error al actualizar producto:", err);
+      alert("❌ No se pudo actualizar el producto.");
     });
 }
-
-
-    function eliminarProducto(id) {
-      if (confirm("¿Eliminar este producto?")) {
-        db.collection("productos").doc(id).delete()
-          .then(() => alert("✅ Producto eliminado."))
-          .catch(err => alert("❌ Error al eliminar: " + err.message));
-      }
-    }
-
-    function cargarProductos() {
-      db.collection("productos").onSnapshot(snapshot => {
-        const contenedor = document.getElementById("productos");
-        contenedor.innerHTML = "";
-
-        snapshot.forEach(doc => {
-          const p = doc.data();
-          const div = document.createElement("div");
-          div.className = "producto-item";
-          div.innerHTML = `
-            <strong>${p.nombre}</strong><br>
-            💰 Precio: $${p.precio.toLocaleString()} - <s>$${p.precioOriginal.toLocaleString()}</s><br>
-
-            <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding: 5px 0;">
-              🎨 ${Object.keys(p.imagenes).map(color =>
-                `<div style="display: inline-block; text-align: center;">
-                  <img src="${p.imagenes[color]}" alt="${color}" style="height: 50px; border-radius: 6px;"><br>
-                  <span style="font-size: 12px;">${color}</span>
-                </div>`).join('')}
-            </div>
-
-            <div style="display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; padding: 5px 0;">
-              📏 ${p.tallas.map(t => `
-                <span style="display: inline-block; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 14px;">
-                  ${t}
-                </span>`).join('')}
-            </div>
-
-            <div class="acciones">
-  <button class="btn-rojo" onclick="eliminarProducto('${doc.id}')">❌ Eliminar</button>
-</div>
-
-          `;
-          contenedor.appendChild(div);
-        });
-      });
-    }
 
     function guardarConfiguracion() {
       const config = {
@@ -336,33 +525,96 @@ async function guardarGaleriaPorLinks() {
   }
 }
 
+function guardarGaleriaPorLinks() {
+  const descripcion = document.getElementById("inputDescripcion").value.trim();
+  const linksTexto = document.getElementById("inputLinks").value.trim();
+  const links = linksTexto.split(/\r?\n/).map(link => link.trim()).filter(link => link);
 
-function mostrarVistaPreviaGaleria() {
-  db.collection("galeria").doc("principal").get()
-    .then(doc => {
-      if (!doc.exists) {
-        document.getElementById("vistaGaleria").innerHTML = "<p>❌ No hay galería guardada.</p>";
-        return;
-      }
+  if (!descripcion || links.length === 0) {
+    alert("Debe ingresar una descripción y al menos una imagen.");
+    return;
+  }
 
-      const data = doc.data();
-      const html = `
-        <h3>📷 Vista previa de la galería</h3>
-        <p>${data.descripcion || "Sin descripción"}</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-          ${data.imagenes.map(url => `
-            <img src="${url}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-          `).join('')}
-        </div>
-      `;
-      document.getElementById("vistaGaleria").innerHTML = html;
+  db.collection("galeria").doc("inicio").set({
+    descripcion,
+    imagenes: links,
+    actualizacion: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    document.getElementById("estadoSubida").textContent = "✅ Galería guardada correctamente.";
+    setTimeout(() => document.getElementById("estadoSubida").textContent = "", 3000);
+  }).catch(error => {
+    console.error("Error al guardar galería:", error);
+    alert("Error guardando galería.");
+  });
+}
+
+function obtenerProductos() {
+  const contenedor = document.getElementById("productos");
+  contenedor.innerHTML = "";
+
+  db.collection("productos").orderBy("fecha", "desc").get()
+    .then(snapshot => {
+      snapshot.forEach(doc => {
+        const p = doc.data();
+        const primerColor = Object.keys(p.imagenes || {})[0];
+        const imagen = p.imagenes?.[primerColor] || "";
+
+        const div = document.createElement("div");
+        div.className = "producto-admin";
+        div.innerHTML = `
+          <img src="${imagen}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
+          <strong>${p.nombre}</strong><br>
+          <span>$${p.precio?.toLocaleString()}</span>
+          <button onclick="eliminarProducto('${doc.id}')" class="btn-rojo">❌ Eliminar</button>
+        `;
+        contenedor.appendChild(div);
+      });
     })
     .catch(err => {
-      console.error("❌ Error al cargar galería:", err);
-      document.getElementById("vistaGaleria").innerHTML = "<p>❌ Error al cargar la galería.</p>";
+      console.error("Error al obtener productos:", err);
     });
 }
 
-window.addEventListener("error", function(e) {
+function mostrarVistaPreviaGaleria() {
+  const linksTexto = document.getElementById("inputLinks").value.trim();
+  const contenedor = document.getElementById("vistaGaleria");
+  contenedor.innerHTML = "";
+
+  if (!linksTexto) return;
+
+  const links = linksTexto.split(/\r?\n/).map(link => link.trim()).filter(link => link);
+
+  links.forEach(link => {
+    const img = document.createElement("img");
+    img.src = link;
+    img.alt = "Imagen galería";
+    img.style.width = "100px";
+    img.style.margin = "5px";
+    contenedor.appendChild(img);
+  });
+}
+
+
+
+function limpiarCampos() {
+  document.getElementById("nuevoNombre").value = "";
+  document.getElementById("nuevoPrecio").value = "";
+  document.getElementById("precioOriginal").value = "";
+  document.getElementById("nuevoImagenes").value = "";
+  document.getElementById("nuevoColor").value = "";
+  document.getElementById("nuevoTallas").value = "";
+  document.getElementById("nuevoDescripcion").value = "";
+  document.getElementById("nuevoPreciosCantidad").value = "";
+  document.getElementById("preview").src = "";
+}
+
+// 🔁 Ejecutar cuando el DOM esté listo
+window.addEventListener("DOMContentLoaded", () => {
+  obtenerProductos(); // ⬅️ Tu función para cargar productos
+  
+});
+
+// 🛑 Capturar errores globales en consola
+window.addEventListener("error", function (e) {
   console.error("🛑 Error global detectado:", e.message);
 });

@@ -1,19 +1,16 @@
-
-    // ✅ Configuración de Firebase ya personalizada
+// ✅ Inicializar Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBV8-3IEMPuP0C9mlt5n4NsZe1z3TKuvy4",
-  authDomain: "modaestiloco.firebaseapp.com",
-  projectId: "modaestiloco",
-  storageBucket: "modaestiloco.appspot.com",
-    messagingSenderId: "136442859187",
-  appId: "1:136442859187:web:9768e10060f45a9543eac6",
-  measurementId: "G-6PZM6CND29"
+  apiKey: "AIzaSyCozJXTEJct407_E6CpjLSK6EOZgk-W8fc",
+  authDomain: "modaestil0.firebaseapp.com",
+  projectId: "modaestil0",
+  storageBucket: "modaestil0.appspot.com",
+  messagingSenderId: "277454254263",
+  appId: "1:277454254263:web:8de217a8c39e25ad1d1d32"
 };
 
-    // ✅ Inicializar Firebase y Firestore
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
   db.collection("configuracion").doc("footer").get().then(doc => {
   if (doc.exists) {
     const c = doc.data();
@@ -56,45 +53,133 @@ db.collection("contenido").doc("quienesSomos").get().then(doc => {
  
 
     // === main.js ===
-    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+   
+// Carrito inicial
+let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
-    function actualizarCarrito() {
-      const div = document.getElementById('carrito');
-      div.innerHTML = '';
+function actualizarCarrito() {
+  const div = document.getElementById('carrito');
+  div.innerHTML = '';
 
-      if (carrito.length === 0) {
-        div.innerHTML = '<p style="text-align:center; color: #888;">🛒 El carrito está vacío</p>';
-      }
+  if (carrito.length === 0) {
+    div.innerHTML = '<p style="text-align:center; color: #888;">🛒 El carrito está vacío</p>';
+    document.getElementById('total-carrito').innerHTML = '';
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    return;
+  }
 
-      carrito.forEach((item, index) => {
-        const tarjeta = document.createElement('div');
-        tarjeta.className = 'item-carrito-elegante';
-      tarjeta.innerHTML = `
+  // 👉 Separar productos con precios por cantidad
+  const conPromo = carrito.filter(p => p.preciosPorCantidad);
+  const sinPromo = carrito.filter(p => !p.preciosPorCantidad);
+
+  const totalPromo = conPromo.reduce((sum, p) => sum + (p.cantidad || 1), 0);
+
+  // ✅ Solo aplicar si hay 2 o más productos con promoción
+  if (totalPromo >= 2) {
+    // Calcular mejor precio global
+    let mejorMatch = 1;
+    let preciosGlobales = [];
+
+    // Juntar todos los escalones posibles
+    conPromo.forEach(p => {
+      const escalones = Object.keys(p.preciosPorCantidad || {});
+      preciosGlobales = preciosGlobales.concat(escalones.map(e => parseInt(e)));
+    });
+
+    preciosGlobales = [...new Set(preciosGlobales)].sort((a, b) => a - b);
+
+    preciosGlobales.forEach(cant => {
+      if (totalPromo >= cant) mejorMatch = cant;
+    });
+
+    conPromo.forEach(p => {
+  const precios = p.preciosPorCantidad;
+  const cantidades = Object.keys(precios).map(c => parseInt(c)).sort((a, b) => a - b);
+  let mejorMatch = 1;
+
+  cantidades.forEach(cant => {
+    if (totalPromo >= cant) mejorMatch = cant;
+  });
+
+  // ⚠️ Dividir el precio del combo entre los pares del combo
+  const precioCombo = parseInt(precios[mejorMatch]);
+  const precioUnitario = Math.round(precioCombo / mejorMatch);
+
+  p.precioAplicado = precioUnitario;
+  p.promocionAplicada = true;
+});
+
+  } else {
+    // Si hay solo 1 con promo, aplicar precio normal
+    conPromo.forEach(p => {
+      p.precioAplicado = p.precio;
+      p.promocionAplicada = false;
+    });
+  }
+
+  // Juntar todo
+  const carritoCompleto = [...conPromo, ...sinPromo];
+
+  let total = 0;
+  let ahorroTotal = 0;
+
+  carritoCompleto.forEach((item, index) => {
+    const tarjeta = document.createElement('div');
+    tarjeta.className = 'item-carrito-elegante';
+
+    const precioOriginal = item.precio;
+    const precioFinal = item.precioAplicado || precioOriginal;
+
+    total += precioFinal;
+
+    const ahorro = precioOriginal - precioFinal;
+    if (ahorro > 0) ahorroTotal += ahorro;
+
+   const cantidadPar = item.cantidad || 1;
+const textoCantidad = cantidadPar === 1 ? "1 par" : `${cantidadPar} pares`;
+const totalProducto = cantidadPar * precioFinal;
+
+tarjeta.innerHTML = `
   <div class="carrito-info">
     <div class="info-superior">
-      <h4>${item.nombre}</h4>
+      <h4>${item.nombre} - ${textoCantidad}</h4>
     </div>
     <p>🎨 Color: <strong>${item.color}</strong></p>
-    <p>📏 Talla: <strong>${item.talla}</strong></p>
-    <p>💲 Precio: <strong>$${item.precio ? item.precio.toLocaleString() : 'N/A'}</strong></p>
-    <div style="margin-top: 8px; text-align: right;">
+    <p class="subitem-talla">
+      <span>📏 Talla: <strong>${item.talla}</strong> - 💲 Total: $${totalProducto.toLocaleString()}</span>
       <span class="icono-eliminar" onclick="eliminarProducto(event, ${index})">❌</span>
-    </div>
+    </p>
+    <p style="font-size: 0.9rem; margin: 0.3rem 0;">
+      💲 Precio unitario: $${precioFinal.toLocaleString()}
+    </p>
+    ${item.promocionAplicada ? `<p style="color: green; font-weight: bold;">💥 Precio por cantidad aplicado</p>` : ''}
   </div>
 `;
 
-        div.appendChild(tarjeta);
-      });
 
-      const total = carrito.reduce((acc, item) => acc + item.precio, 0);
-      document.getElementById('total-carrito').innerHTML = `
+    div.appendChild(tarjeta);
+  });
+
+  document.getElementById('total-carrito').innerHTML = `
     <div class="total-carrito">
-      🧾 <strong>Total:</strong> <span>$${total.toLocaleString()}</span>
+      🧾 <strong>Total:</strong> <span>$${total.toLocaleString()}</span><br>
+      ${ahorroTotal > 0 ? `<span style="color: green;">🎉 Ahorraste: $${ahorroTotal.toLocaleString()}</span>` : ''}
     </div>
   `;
 
-      localStorage.setItem('carrito', JSON.stringify(carrito));
-    }
+  localStorage.setItem('carrito', JSON.stringify(carrito));
+}
+
+
+
+function eliminarTalla(id, color, talla) {
+  const index = carrito.findIndex(item => item.id === id && item.color === color && item.talla === talla);
+  if (index !== -1) {
+    carrito.splice(index, 1);
+    actualizarCarrito();
+  }
+}
+
 
     function eliminarProducto(event, index) {
   event.stopPropagation(); // 👈 Previene que se cierre el carrito
@@ -206,12 +291,13 @@ function guardarQuienesSomos() {
   const fechaFormateada = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${fecha.getFullYear()}`;
   let mensaje = `📦 *NUEVO PEDIDO*\n\n🗓️ *Fecha:* ${fechaFormateada}\n\n`;
 
-  carrito.forEach((item, i) => {
-    mensaje += `🥿 *Producto ${i + 1}*: ${item.nombre} - Color: ${item.color} - Talla: ${item.talla} - Precio: $${item.precio.toLocaleString()}\n`;
-  });
+ carrito.forEach((item, i) => {
+  mensaje += `🥿 *Producto ${i + 1}*: ${item.nombre} - Color: ${item.color} - Talla: ${item.talla} - Cantidad: ${item.cantidad} par${item.cantidad > 1 ? 'es' : ''} - Total: $${parseInt(item.precio).toLocaleString()}\n`;
 
-  const total = carrito.reduce((acc, item) => acc + item.precio, 0);
-  mensaje += `\n💰 *Total:* $${total.toLocaleString()}\n\n`;
+});
+
+  const total = carrito.reduce((acc, item) => acc + parseInt(item.precio), 0);
+mensaje += `\n💰 *Total:* $${total.toLocaleString()}\n\n`;
   mensaje += `📍 *Nombre:* ${campos.nombre}\n`;
   mensaje += `🏛️ *Departamento:* ${campos.departamento}\n`;
   mensaje += `🏙️ *Ciudad:* ${campos.ciudad}\n`;
@@ -255,131 +341,141 @@ mensaje += `\n🙌 *¡Gracias por tu compra!* Te contactaremos pronto para coord
 }
 
  // Descuento extra
-    function iniciarDescuentoIndividual(productoNode, minutosDescuento = 10) {
-      const id = productoNode.getAttribute("data-id");
-      const precioTag = productoNode.querySelector(".precio-producto");
-      const precioConDescuento = productoNode.querySelector(".precio-con-descuento");
-      const contador = productoNode.querySelector(".contador-individual");
-      const mensajeDescuento = productoNode.querySelector(".descuento-tiempo");
+ function iniciarDescuentoIndividual(productoNode, minutosDescuento = 10) {
+  const tieneDescuentoFijo = parseInt(productoNode.getAttribute("data-descuento-fijo"));
+  if (tieneDescuentoFijo > 0) {
+    const mensajeDescuento = productoNode.querySelector(".descuento-tiempo");
+    if (mensajeDescuento) mensajeDescuento.style.display = "none";
+    return; // ⛔ No aplicar descuento por tiempo si ya hay descuento fijo
+  }
 
-      const precioOriginal = parseFloat(precioTag.getAttribute("data-precio-original"));
-      const precioBase = parseFloat(precioTag.getAttribute("data-precio"));
+  const id = productoNode.getAttribute("data-id");
+  const precioTag = productoNode.querySelector(".precio-producto");
+  const precioConDescuento = productoNode.querySelector(".precio-con-descuento");
+  const contador = productoNode.querySelector(".contador-individual");
+  const mensajeDescuento = productoNode.querySelector(".descuento-tiempo");
 
+  const precioOriginal = parseFloat(precioTag.getAttribute("data-precio-original"));
+  const precioBase = parseFloat(precioTag.getAttribute("data-precio"));
 
-      //const porcentajeDescuento = 0.10; // 10%
-      const precioExtraDescuento = Math.round(precioBase * 1);
+  const precioExtraDescuento = Math.round(precioBase * 0.9); // ✅ 10% extra
 
-      let inicio = localStorage.getItem(`descuentoInicio_${id}`);
-      if (!inicio) {
-        inicio = new Date().getTime();
-        localStorage.setItem(`descuentoInicio_${id}`, inicio);
-      } else {
-        inicio = parseInt(inicio);
+  let inicio = localStorage.getItem(`descuentoInicio_${id}`);
+  if (!inicio) {
+    inicio = new Date().getTime();
+    localStorage.setItem(`descuentoInicio_${id}`, inicio);
+  } else {
+    inicio = parseInt(inicio);
+  }
+
+  const fin = inicio + minutosDescuento * 60 * 1000;
+
+  const actualizarContador = () => {
+    const ahora = new Date().getTime();
+    const restante = fin - ahora;
+
+    if (restante > 0) {
+      const segundos = Math.floor((restante / 1000) % 60);
+      const minutos = Math.floor((restante / 1000 / 60) % 60);
+      const horas = Math.floor(restante / 1000 / 60 / 60);
+
+      contador.textContent = `${horas.toString().padStart(2, "0")}:${minutos
+        .toString()
+        .padStart(2, "0")}:${segundos.toString().padStart(2, "0")}`;
+
+      precioConDescuento.textContent = `$${precioExtraDescuento.toLocaleString()}`;
+      precioTag.setAttribute("data-precio", precioExtraDescuento);
+    } else {
+      clearInterval(intervalo);
+      contador.textContent = "00:00:00";
+      precioConDescuento.textContent = `$${precioBase.toLocaleString()}`;
+      precioTag.setAttribute("data-precio", precioBase);
+
+      if (mensajeDescuento) mensajeDescuento.style.display = "none";
+
+      let tachado = precioTag.querySelector("s");
+      if (!tachado) {
+        tachado = document.createElement("s");
+        precioTag.insertBefore(tachado, precioConDescuento);
       }
-
-      const fin = inicio + minutosDescuento * 60 * 1000;
-      const ahora = new Date().getTime();
-
-      if (ahora < fin) {
-        precioConDescuento.textContent = `$${precioExtraDescuento.toLocaleString()}`;
-        precioTag.setAttribute("data-precio", precioExtraDescuento);
-      } else {
-        precioConDescuento.textContent = `$${precioBase.toLocaleString()}`;
-        precioTag.setAttribute("data-precio", precioBase);
-
-        if (mensajeDescuento) mensajeDescuento.style.display = "none";
-       
-        let tachado = precioTag.querySelector("s");
-if (!tachado) {
-  tachado = document.createElement("s");
-  precioTag.insertBefore(tachado, precioConDescuento);
-}
-tachado.textContent = `$${precioOriginal.toLocaleString()}`;
-
-        return;
-      }
-
-
-
-
-      function actualizar() {
-        const ahora = new Date().getTime();
-        const distancia = fin - ahora;
-
-        if (distancia <= 0) {
-          clearInterval(intervalo);
-
-          // Restaurar precio
-          precioConDescuento.textContent = `$${precioBase.toLocaleString()}`;
-          precioTag.setAttribute("data-precio", precioBase);
-
-          // Quitar tachado
-          const tachado = precioTag.querySelector("s");
-          if (tachado) tachado.remove();
-
-          // ✅ Ocultar mensaje
-          if (mensajeDescuento) mensajeDescuento.style.display = "none";
-
-          return;
-        }
-
-        const horas = Math.floor((distancia % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutos = Math.floor((distancia % (1000 * 60 * 60)) / (1000 * 60));
-        const segundos = Math.floor((distancia % (1000 * 60)) / 1000);
-
-        contador.textContent =
-          `${horas.toString().padStart(2, '0')}:` +
-          `${minutos.toString().padStart(2, '0')}:` +
-          `${segundos.toString().padStart(2, '0')}`;
-      }
-
-      actualizar();
-      const intervalo = setInterval(actualizar, 1000);
+      tachado.textContent = `$${precioOriginal.toLocaleString()}`;
     }
+  };
+
+  if (mensajeDescuento) mensajeDescuento.style.display = "block";
+  actualizarContador();
+  const intervalo = setInterval(actualizarContador, 1000);
+}
 
 
-    function cargarProductosDesdeFirebase() {
-      db.collection("productos").onSnapshot(snapshot => {
-        const contenedor = document.getElementById("contenedor-productos");
-        contenedor.innerHTML = "";
+function cargarProductosDesdeFirebase() {
+  const contenedor = document.getElementById("contenedor-productos");
+  contenedor.innerHTML = "Cargando productos...";
 
-        snapshot.forEach(doc => {
-          const p = doc.data();
-          const id = doc.id;
+  db.collection("productos").onSnapshot(snapshot => {
+    contenedor.innerHTML = "";
 
-          const contenedorProducto = document.createElement("div");
-          contenedorProducto.className = "producto";
-          contenedorProducto.setAttribute("data-id", id);
-          contenedorProducto.setAttribute("data-imagenes", JSON.stringify(p.imagenes || {}));
+    snapshot.forEach(doc => {
+      const p = doc.data();
+      const id = doc.id;
 
-          contenedorProducto.innerHTML = `
-          <div class="contenedor-img">
-    <img class="main-img" src="${Object.values(p.imagenes || {})[0] || ''}" alt="${p.nombre}">
-  </div>
+      // Validar campos mínimos
+      if (p.precio === undefined || !p.imagenes || Object.keys(p.imagenes).length === 0) return;
 
+      // Usar precioOriginal si existe, si no usar el precio normal
+      p.precioOriginal = p.precioOriginal || p.precio;
+
+      const porcentaje = parseInt(p.descuento) || 0;
+      const precioDescuentoFijo = porcentaje > 0
+        ? Math.round(p.precioOriginal * (1 - porcentaje / 100))
+        : p.precio;
+
+      const contenedorProducto = document.createElement("div");
+      contenedorProducto.className = "producto";
+      contenedorProducto.setAttribute("data-id", id);
+      contenedorProducto.setAttribute("data-imagenes", JSON.stringify(p.imagenes || {}));
+      contenedorProducto.setAttribute("data-descuento-fijo", porcentaje);
+
+      contenedorProducto.innerHTML = `
+        <div class="contenedor-img">
+          <img class="main-img" src="${Object.values(p.imagenes)[0]}" alt="${p.nombre}">
+        </div>
 
         <div class="imagenes-carrusel carrusel-scroll">
-          ${(Object.entries(p.imagenes || {})).map(([color, url]) =>
+          ${Object.entries(p.imagenes).map(([color, url]) =>
             `<img src="${url}" alt="${color}" class="img-mini" data-color="${color}">`).join("")}
         </div>
 
-        <h2>${p.nombre}</h2>
-
-        <p class="precio-producto" data-precio="${p.precio}" data-precio-original="${p.precioOriginal}">
-          Precio: <s>$${parseInt(p.precioOriginal).toLocaleString()}</s>
-          <strong class="precio-con-descuento">$${parseInt(p.precio).toLocaleString()}</strong>
-        </p>
-  
-
-        
-        <div class="cuenta-producto descuento-tiempo" style="font-size:0.9rem; margin-top:0.5rem; color: red;">
-  ⏳ Descuento 10% extra termina en: <span class="contador-individual">00:00:00</span>
+       <div class="carrusel-letrero">
+  <p>
+    ${Object.entries(p.preciosPorCantidad || {}).map(([cant, precio]) =>
+      `${cant} par${cant > 1 ? 'es' : ''} - $${parseInt(precio).toLocaleString()}`
+    ).join(" • ")}
+  </p>
 </div>
 
 
+        <h2>${p.nombre}</h2>
+
+        <div class="descripcion-expandible">
+          <button class="btn-ver-descripcion">Ver descripción</button>
+          <p class="descripcion-texto">${p.descripcion || "Sin descripción"}</p>
+        </div>
+
+
+        <p class="precio-producto" data-precio="${precioDescuentoFijo}" data-precio-original="${p.precioOriginal}">
+  Precio: 
+  ${porcentaje > 0 ? `<s>$${parseInt(p.precioOriginal).toLocaleString()}</s>` : ''}
+  <strong class="precio-con-descuento">$${precioDescuentoFijo.toLocaleString()}</strong>
+</p>
+
+
+        <div class="cuenta-producto descuento-tiempo" style="font-size:0.9rem; margin-top:0.5rem; color: red;">
+          ⏳ Descuento 10% extra termina en: <span class="contador-individual">00:00:00</span>
+        </div>
 
         <div class="carrusel-colores carrusel-scroll">
-          ${(p.colores || Object.keys(p.imagenes || {})).map(color => `
+          ${(p.colores || Object.keys(p.imagenes)).map(color => `
             <div class="color-item">${color}</div>`).join("")}
         </div>
 
@@ -391,12 +487,42 @@ tachado.textContent = `$${precioOriginal.toLocaleString()}`;
         <button class="btn-agregar">Agregar al carrito</button>
       `;
 
-          contenedor.appendChild(contenedorProducto);
-          inicializarCarruselInteractivo(contenedorProducto);
-          iniciarDescuentoIndividual(contenedorProducto, 10);
+      contenedor.appendChild(contenedorProducto);
+
+      // Funcionalidades extra
+      inicializarCarruselInteractivo(contenedorProducto);
+        
+      // para darle 10% de descuento extra
+        //iniciarDescuentoIndividual(contenedorProducto, 10);
+
+      // Expandir descripción
+      const botonVerDescripcion = contenedorProducto.querySelector(".btn-ver-descripcion");
+      const descripcionTexto = contenedorProducto.querySelector(".descripcion-texto");
+
+      if (botonVerDescripcion && descripcionTexto) {
+        botonVerDescripcion.addEventListener("click", () => {
+          descripcionTexto.classList.toggle("mostrar");
+          botonVerDescripcion.textContent = descripcionTexto.classList.contains("mostrar")
+            ? "Ocultar descripción"
+            : "Ver descripción";
         });
-      });
+
+        if (!descripcionTexto.textContent.trim()) {
+          botonVerDescripcion.style.display = "none";
+        }
+      }
+    });
+
+    if (contenedor.innerHTML.trim() === "") {
+      contenedor.innerHTML = "<p>No hay productos disponibles.</p>";
     }
+  }, error => {
+    console.error("Error cargando productos:", error);
+    contenedor.innerHTML = "<p>Error al cargar productos.</p>";
+  });
+}
+
+
 
 document.getElementById("buscadorProductos").addEventListener("input", function () {
   const termino = this.value.toLowerCase().trim();
@@ -412,88 +538,111 @@ document.getElementById("buscadorProductos").addEventListener("input", function 
   });
 });
 
+function obtenerProductos() {
+  const contenedor = document.getElementById("productos");
+  contenedor.innerHTML = "";
 
-    function inicializarCarruselInteractivo(producto) {
-      const imagenes = JSON.parse(producto.getAttribute('data-imagenes') || '{}');
-      const mainImg = producto.querySelector('.main-img');
-      const miniaturas = hacerCarruselInfinito(producto.querySelector('.imagenes-carrusel'), '.img-mini');
-      const colores = hacerCarruselInfinito(producto.querySelector('.carrusel-colores'), '.color-item');
-      const tallas = hacerCarruselInfinito(producto.querySelector('.carrusel-tallas'), '.talla-item');
-
-      const boton = producto.querySelector('.btn-agregar');
-      const nombre = producto.querySelector('h2').textContent;
-      const precioTexto = producto.querySelector('.precio-con-descuento').textContent.replace(/[$.]/g, '');
-      const precio = parseInt(precioTexto);
-
-      let colorSeleccionado = null;
-      let tallaSeleccionada = null;
-
-     miniaturas.forEach(img => {
-  img.addEventListener('click', () => {
-    miniaturas.forEach(i => i.classList.remove('seleccionada'));
-    img.classList.add('seleccionada');
-
-    const nuevaImagen = img.getAttribute('src'); // ✅ Usa src directamente
-    mainImg.setAttribute('src', nuevaImagen);
-
-    centrarElementoEnCarrusel(producto.querySelector('.imagenes-carrusel'), img);
-    producto.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  });
-});
-
-colores.forEach(c => {
-  c.addEventListener('click', () => {
-    colores.forEach(otro => otro.classList.remove('active')); // 🔁 CAMBIA esto
-    c.classList.add('active'); // ✅ En lugar de "seleccionada"
-
-    colorSeleccionado = c.textContent.trim();
-
-    const nuevoColor = colorSeleccionado;
-    const imagenSrc = imagenes[nuevoColor];
-
-    if (imagenSrc) {
-      mainImg.setAttribute('src', imagenSrc);
-    }
-
-    mainImg.setAttribute('data-color', nuevoColor);
-    producto.setAttribute('data-color', nuevoColor);
-
-    centrarElementoEnCarrusel(producto.querySelector('.carrusel-colores'), c);
-    producto.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  });
-});
-
-
-tallas.forEach(t => {
-  t.addEventListener('click', () => {
-    tallas.forEach(i => i.classList.remove('active'));
-    t.classList.add('active');
-    tallaSeleccionada = t.textContent.trim(); // ✅ ACTUALIZA VARIABLE
-    centrarElementoEnCarrusel(producto.querySelector('.carrusel-tallas'), t);
-  });
-});
-
-      boton.addEventListener('click', () => {
-        if (!colorSeleccionado || !tallaSeleccionada) {
-          alert("Selecciona color y talla antes de agregar al carrito.");
-          return;
-        }
-
-        const imagen = mainImg.src;
-        carrito.push({
-          nombre,
-          color: colorSeleccionado,
-          talla: tallaSeleccionada,
-          precio,
-          imagen
-        });
-
-        localStorage.setItem('carrito', JSON.stringify(carrito));
-        actualizarCarrito();
-        mostrarNotificacion();
+  db.collection("productos")
+    .get()
+    .then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        const producto = doc.data();
+        const item = document.createElement("div");
+        item.innerHTML = `
+          <strong>${producto.nombre}</strong><br>
+          <button onclick="eliminarProducto('${doc.id}')" class="btn-rojo">🗑️ Eliminar</button>
+        `;
+        contenedor.appendChild(item);
       });
+    })
+    .catch((error) => {
+      console.error("Error al obtener productos:", error);
+    });
+}
 
+
+function inicializarCarruselInteractivo(producto) {
+  const imagenes = JSON.parse(producto.getAttribute('data-imagenes') || '{}');
+  const mainImg = producto.querySelector('.main-img');
+  const miniaturas = hacerCarruselInfinito(producto.querySelector('.imagenes-carrusel'), '.img-mini');
+  const colores = hacerCarruselInfinito(producto.querySelector('.carrusel-colores'), '.color-item');
+  const tallas = hacerCarruselInfinito(producto.querySelector('.carrusel-tallas'), '.talla-item');
+  const cantidadSelect = producto.querySelector('.select-cantidad');
+  const boton = producto.querySelector('.btn-agregar');
+  const nombre = producto.querySelector('h2').textContent;
+
+  let colorSeleccionado = null;
+  let tallaSeleccionada = null;
+
+  miniaturas.forEach(img => {
+    img.addEventListener('click', () => {
+      miniaturas.forEach(i => i.classList.remove('seleccionada'));
+      img.classList.add('seleccionada');
+      mainImg.setAttribute('src', img.getAttribute('src'));
+      centrarElementoEnCarrusel(producto.querySelector('.imagenes-carrusel'), img);
+      producto.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  colores.forEach(c => {
+    c.addEventListener('click', () => {
+      colores.forEach(otro => otro.classList.remove('active'));
+      c.classList.add('active');
+      colorSeleccionado = c.textContent.trim();
+      const imagenSrc = imagenes[colorSeleccionado];
+      if (imagenSrc) mainImg.setAttribute('src', imagenSrc);
+      mainImg.setAttribute('data-color', colorSeleccionado);
+      producto.setAttribute('data-color', colorSeleccionado);
+      centrarElementoEnCarrusel(producto.querySelector('.carrusel-colores'), c);
+      producto.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  });
+
+  tallas.forEach(t => {
+    t.addEventListener('click', () => {
+      tallas.forEach(i => i.classList.remove('active'));
+      t.classList.add('active');
+      tallaSeleccionada = t.textContent.trim();
+      centrarElementoEnCarrusel(producto.querySelector('.carrusel-tallas'), t);
+    });
+  });
+
+    boton.addEventListener('click', () => {
+    if (!colorSeleccionado || !tallaSeleccionada) {
+      alert("Selecciona color y talla antes de agregar al carrito.");
+      return;
     }
+
+    let preciosPorCantidad = null;
+
+    if (cantidadSelect) {
+      preciosPorCantidad = {};
+      Array.from(cantidadSelect.options).forEach(opt => {
+        preciosPorCantidad[parseInt(opt.value)] = parseInt(opt.getAttribute("data-precio"));
+      });
+    }
+
+    const productoId = producto.getAttribute("data-id");
+    const imagen = mainImg.src;
+    const precioBase = parseInt(producto.querySelector('.precio-producto').getAttribute("data-precio"));
+
+    carrito.push({
+      id: productoId,
+      nombre,
+      color: colorSeleccionado,
+      talla: tallaSeleccionada,
+      cantidad: 1,
+      precio: preciosPorCantidad?.[1] || precioBase,
+      preciosPorCantidad,
+      imagen
+    });
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarCarrito();
+    mostrarNotificacion();
+  });
+
+}
 
 
     function hacerCarruselInfinito(carrusel, claseItem) {
@@ -612,6 +761,35 @@ function cargarOpcionesMetodoPago() {
 }
 
 
+function cargarGaleriaDesdeFirebase() {
+  const carrusel = document.getElementById('carruselGaleria');
+  const descripcion = document.getElementById('textoGaleria');
+
+  db.collection('galeria').doc('principal').get().then(doc => {
+    if (!doc.exists) return;
+
+    const data = doc.data();
+    descripcion.textContent = data.descripcion || "";
+
+    // Agregar imágenes duplicadas para scroll infinito
+    const imagenes = [...data.imagenes, ...data.imagenes];
+    carrusel.innerHTML = imagenes.map(url => `
+      <img src="${url}" class="miniatura" alt="galería">
+    `).join('');
+  });
+}
+
+
+  function irAInicio() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }    
+
+  // Exponer funciones al HTML (onclick)
+window.mostrarFormulario = mostrarFormulario;
+window.ocultarFormulario = ocultarFormulario;
+window.confirmarEnvioWhatsApp = confirmarEnvioWhatsApp;
+
+
 
 window.addEventListener("DOMContentLoaded", () => {
   actualizarCarrito();
@@ -660,36 +838,3 @@ document.addEventListener("click", (event) => {
 });
 
 });
-
-function cargarGaleriaDesdeFirebase() {
-  const carrusel = document.getElementById('carruselGaleria');
-  const descripcion = document.getElementById('textoGaleria');
-
-  db.collection('galeria').doc('principal').get().then(doc => {
-    if (!doc.exists) return;
-
-    const data = doc.data();
-    descripcion.textContent = data.descripcion || "";
-
-    // Agregar imágenes duplicadas para scroll infinito
-    const imagenes = [...data.imagenes, ...data.imagenes];
-    carrusel.innerHTML = imagenes.map(url => `
-      <img src="${url}" class="miniatura" alt="galería">
-    `).join('');
-  });
-}
-
-
-  function irAInicio() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }    
-
-  // Exponer funciones al HTML (onclick)
-window.mostrarFormulario = mostrarFormulario;
-window.ocultarFormulario = ocultarFormulario;
-window.confirmarEnvioWhatsApp = confirmarEnvioWhatsApp;
-
-
-
-
-
