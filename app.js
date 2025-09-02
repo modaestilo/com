@@ -17,21 +17,32 @@ if (!firebase.apps.length) {
 // ✅ Exporta Firestore para usarlo globalmente
 const db = firebase.firestore();
 
-
-  db.collection("configuracion").doc("footer").get().then(doc => {
+// ✅ Cargar configuración general (título, WhatsApp y redes sociales)
+db.collection("configuracion").doc("general").get().then(doc => {
   if (doc.exists) {
     const c = doc.data();
 
-    // Guardar el número para envíos
-    window.numeroWspConfig = c.whatsapp;
-
-    // WhatsApp del botón flotante
-    const btnWsp = document.querySelector(".btn-whatsapp");
-    if (btnWsp && c.whatsapp) {
-      btnWsp.href = `https://wa.me/${c.whatsapp}`;
+    // 🏷️ Título de la tienda
+    if (c.titulo) {
+      document.querySelector("header h1").textContent = c.titulo;
+      document.title = c.titulo; // cambia también el título de la pestaña
     }
 
-    // Redes sociales
+    // 📲 WhatsApp general (botón flotante)
+    if (c.whatsapp) {
+      window.numeroWspConfig = c.whatsapp;
+      const btnWsp = document.querySelector(".btn-whatsapp");
+      if (btnWsp) {
+        btnWsp.href = `https://wa.me/${c.whatsapp}`;
+      }
+    }
+
+    // 📲 WhatsApp de pedidos (si tienes uno distinto)
+    if (c.whatsappPedidos) {
+      window.numeroWspPedidos = c.whatsappPedidos;
+    }
+
+    // 🌐 Redes sociales (footer)
     if (c.facebook) {
       const fb = document.querySelector(".facebook-link");
       if (fb) fb.href = c.facebook;
@@ -45,32 +56,10 @@ const db = firebase.firestore();
       if (tt) tt.href = c.tiktok;
     }
   } else {
-    console.warn("⚠️ No hay configuración en Firestore.");
+    console.warn("⚠️ No se encontró configuración general en Firestore.");
   }
 }).catch(error => {
-  console.error("❌ Error cargando configuración:", error);
-});
-
-// ✅ Cargar título desde Firebase
-db.collection("configuracion").doc("general").get().then(doc => {
-  if (doc.exists) {
-    const c = doc.data();
-    if (c.titulo) {
-      document.querySelector("header h1").textContent = c.titulo;
-      document.title = c.titulo; // opcional: cambia el <title> de la pestaña
-    }
-  } else {
-    console.warn("⚠️ No se encontró título en Firestore.");
-  }
-}).catch(err => {
-  console.error("❌ Error cargando título:", err);
-});
-
-
-db.collection("contenido").doc("quienesSomos").get().then(doc => {
-  if (doc.exists) {
-    document.getElementById("contenido-quienes-somos").textContent = doc.data().texto || "";
-  }
+  console.error("❌ Error cargando configuración general:", error);
 });
  
 
