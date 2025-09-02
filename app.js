@@ -887,14 +887,10 @@ window.mostrarFormulario = mostrarFormulario;
 window.ocultarFormulario = ocultarFormulario;
 window.confirmarEnvioWhatsApp = confirmarEnvioWhatsApp;
 
-
-
-
-
 window.addEventListener("DOMContentLoaded", async () => {
   actualizarCarrito();
 
-  // Esperar a que se cargue primero la galería (donde viene textoPromocionCantidad)
+  // Esperar a que se cargue primero la galería
   await cargarGaleriaDesdeFirebase();
 
   // Luego sí cargar productos
@@ -903,6 +899,25 @@ window.addEventListener("DOMContentLoaded", async () => {
   cargarMetodosPagoPublico();
   cargarOpcionesMetodoPago();
 
+  // ✅ Cargar sección "Quiénes somos"
+  db.collection("configuracion").doc("quienesSomos").get()
+    .then(doc => {
+      const contenedor = document.getElementById("contenido-quienes-somos");
+      if (!contenedor) return;
+
+      if (doc.exists && doc.data().contenido) {
+        contenedor.textContent = doc.data().contenido;
+      } else {
+        contenedor.textContent = "Aún no se ha configurado esta sección.";
+      }
+    })
+    .catch(err => {
+      console.error("❌ Error cargando 'Quiénes somos':", err);
+      const contenedor = document.getElementById("contenido-quienes-somos");
+      if (contenedor) {
+        contenedor.textContent = "Error al cargar la información.";
+      }
+    });
 
 
 document.addEventListener("click", (event) => {
