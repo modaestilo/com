@@ -8,33 +8,44 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
   <h1>Panel de Administración</h1>
+
+  <!-- 🔑 Login -->
   <div id="login">
     <input type="email" id="correo" placeholder="Correo" />
     <input type="password" id="clave" placeholder="Contraseña" />
     <button onclick="loginFirebase()" class="btn-negro">Iniciar sesión</button>
   </div>
 
-  
-  
+  <!-- 👑 Panel Admin -->
   <div id="admin" style="display:none;">
+
+    <!-- ⚙️ Configuración -->
     <div class="toggle-section">
       <button onclick="mostrarSeccion('configuracion')">⚙️ Configuración</button>
       <div id="seccion-configuracion" class="seccion">
-        <h2>Redes Sociales</h2>
+        <h2>Configuración General</h2>
+
+        <!-- ✏️ Campo para el título principal -->
+        <label for="tituloPrincipal">Título de la tienda</label>
+        <input id="tituloPrincipal" placeholder="Ej: Moda & Estilo">
+
+        <h3>Redes Sociales</h3>
         <input id="configWhatsapp" placeholder="Número WhatsApp (Ej: 573001234567)">
         <input id="configWspPedido" placeholder="Número WhatsApp para pedidos (Ej: 573001234567)">
         <input id="configFacebook" placeholder="URL de Facebook">
         <input id="configInstagram" placeholder="URL de Instagram">
         <input id="configTikTok" placeholder="URL de TikTok">
+
         <button onclick="guardarConfiguracion()" class="btn-verde">Guardar Configuración</button>
       </div>
     </div>
 
-   <div class="toggle-section">
+    <!-- ✏️ Quiénes somos -->
+    <div class="toggle-section">
       <button onclick="mostrarSeccion('quienes')">✏️ Quiénes Somos</button>
       <div id="seccion-quienes" class="seccion">
         <textarea id="quienesSomosTexto" rows="6"></textarea>
@@ -42,6 +53,7 @@
       </div>
     </div>
 
+    <!-- 💳 Métodos de pago -->
     <div class="toggle-section">
       <button onclick="mostrarSeccion('pagos')">💳 Métodos de Pago</button>
       <div id="seccion-pagos" class="seccion">
@@ -52,83 +64,89 @@
       </div>
     </div>
 
+    <!-- 🖼️ Galería -->
+    <div class="toggle-section">
+      <button onclick="mostrarSeccion('galeria')">🖼️ Galería</button>
+      <div id="seccion-galeria" class="seccion">
+        <div class="admin-galeria">
+          <!-- 📝 Descripción -->
+          <label for="inputDescripcion">📝 Descripción general:</label>
+          <textarea id="inputDescripcion" placeholder="Escribe la descripción aquí..."></textarea>
 
-<div class="toggle-section">
-  <button onclick="mostrarSeccion('galeria')">🖼️ Galería</button>
-</div>
+          <!-- 💬 Texto promocional -->
+          <h3>Texto debajo de promociones por cantidad</h3>
+          <textarea id="textoPromocionCantidad" rows="3" placeholder="💡 Escribe aquí tu mensaje de ahorro..."></textarea>
 
-<div id="seccion-galeria" class="seccion">
-  <h2>🛠️ Galería por Links</h2>
+          <!-- 🔗 Enlaces -->
+          <label for="inputLinks">🔗 Pega aquí los enlaces de las imágenes (uno por línea):</label>
+          <textarea id="inputLinks" rows="6" placeholder="https://miimagen.com/1.jpg
+https://otraimagen.com/2.jpg"></textarea>
 
-  <button onclick="mostrarVistaPreviaGaleria()" class="btn-negro">🔄 Ver Galería Actual</button>
+          <!-- 👁️ Vista previa -->
+          <button onclick="mostrarVistaPreviaGaleria()" class="btn-negro">🔄 Ver Galería Actual</button>
+          <div id="vistaGaleria" class="vista-galeria"></div>
 
-  <div class="admin-galeria">
-    <label for="inputDescripcion">📝 Descripción general:</label>
-    <textarea id="inputDescripcion" placeholder="Escribe la descripción aquí..."></textarea>
+          <!-- 💾 Botón guardar -->
+          <button onclick="guardarGaleriaPorLinks()" class="btn-verde">💾 Guardar galería</button>
+          <div id="estadoSubida" style="margin-top: 1rem; color: green;"></div>
+        </div>
+      </div>
+    </div>
 
-    <label for="inputLinks">🔗 Pega aquí los enlaces de las imágenes (uno por línea):</label>
-    <textarea id="inputLinks" placeholder="https://miimagen.com/1.jpg&#10;https://otraimagen.com/2.jpg" rows="6"></textarea>
-
-    <div id="vistaGaleria" class="vista-galeria"></div>
-
-    <button onclick="guardarGaleriaPorLinks()" class="btn-verde">💾 Guardar galería</button>
-    <div id="estadoSubida" style="margin-top: 1rem; color: green;"></div>
-  </div>
-</div>
-
-
+    <!-- 🧺 Productos -->
     <div class="toggle-section">
       <button onclick="mostrarSeccion('productos')">🧺 Productos</button>
       <div id="seccion-productos" class="seccion">
         <h2>Agregar Producto</h2>
-        <input id="nuevoNombre" placeholder="Nombre producto"><div class="campo">
-  <label for="precioOriginal">Precio original</label>
-  <input type="number" id="precioOriginal" placeholder="Ej: 80000" required />
-</div>
 
-<!-- 🔥 Nuevo campo de descuento -->
-<div class="campo">
-  <label for="descuento">Descuento (%)</label>
-  <input type="number" id="descuento" placeholder="Ej: 10" />
-</div>
+        <input id="nuevoNombre" placeholder="Nombre producto">
 
-<div class="campo">
-  <label for="descripcion">Descripción</label>
-  <textarea id="descripcion" placeholder="Detalles del producto..." rows="3"></textarea>
-</div>
+        <div class="campo">
+          <label for="precioOriginal">Precio original</label>
+          <input type="number" id="precioOriginal" placeholder="Ej: 80000" required />
+        </div>
 
-<div class="campo">
-  <label for="colorPrincipal">Color principal</label>
-  <input type="text" id="colorPrincipal" placeholder="Ej: negro" required />
-</div>
+        <div class="campo">
+          <label for="descuento">Descuento (%)</label>
+          <input type="number" id="descuento" placeholder="Ej: 10" />
+        </div>
 
-<div class="campo">
-  <label for="tallas">Tallas disponibles (separadas por coma)</label>
-  <input type="text" id="tallas" placeholder="Ej: 35,36,37,38,39" required />
-</div>
+        <div class="campo">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" placeholder="Detalles del producto..." rows="3"></textarea>
+        </div>
 
-<div class="campo">
-  <label for="imagenes">Imágenes (formato: color|url, separadas por coma)</label>
-  <input type="text" id="imagenes" placeholder="Ej: negro|https://... , blanco|https://..." required />
-</div>
+        <div class="campo">
+          <label for="colorPrincipal">Color principal</label>
+          <input type="text" id="colorPrincipal" placeholder="Ej: negro" required />
+        </div>
 
-<div id="preciosPorCantidad" class="campo">
-  <label>Precios por cantidad (opcional):</label>
-  <input type="number" data-cantidad="2" placeholder="Precio por 2 pares" />
-  <input type="number" data-cantidad="3" placeholder="Precio por 3 pares" />
-  <input type="number" data-cantidad="4" placeholder="Precio por 4 pares" />
-</div>
+        <div class="campo">
+          <label for="tallas">Tallas disponibles (separadas por coma)</label>
+          <input type="text" id="tallas" placeholder="Ej: 35,36,37,38,39" required />
+        </div>
 
-<button class="btn-verde" onclick="agregarProducto()">Agregar producto</button>
-<!-- Después del botón "Agregar producto" -->
-<h2>Productos existentes</h2>
-<div id="productos"></div>
+        <div class="campo">
+          <label for="imagenes">Imágenes (formato: color|url, separadas por coma)</label>
+          <input type="text" id="imagenes" placeholder="Ej: negro|https://... , blanco|https://..." required />
+        </div>
 
-  </div>
+        <div id="preciosPorCantidad" class="campo">
+          <label>Precios por cantidad (opcional):</label>
+          <input type="number" data-cantidad="2" placeholder="Precio por 2 pares" />
+          <input type="number" data-cantidad="3" placeholder="Precio por 3 pares" />
+          <input type="number" data-cantidad="4" placeholder="Precio por 4 pares" />
+        </div>
 
-      </div>  
-    <!-- Dentro de #admin, al final -->
-<button onclick="firebase.auth().signOut()" class="btn-rojo">Cerrar sesión</button>
+        <button class="btn-verde" onclick="agregarProducto()">Agregar producto</button>
+
+        <h2>Productos existentes</h2>
+        <div id="productos"></div>
+      </div>
+    </div>
+
+    <!-- 🔒 Cerrar sesión -->
+    <button onclick="cerrarSesion()" class="btn-rojo">Cerrar sesión</button>
   </div>
 
   <script src="admin.js"></script>

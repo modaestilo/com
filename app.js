@@ -1,15 +1,22 @@
-// ✅ Inicializar Firebase
+// firebase-config.js
 const firebaseConfig = {
-  apiKey: "AIzaSyCozJXTEJct407_E6CpjLSK6EOZgk-W8fc",
-  authDomain: "modaestil0.firebaseapp.com",
-  projectId: "modaestil0",
-  storageBucket: "modaestil0.appspot.com",
-  messagingSenderId: "277454254263",
-  appId: "1:277454254263:web:8de217a8c39e25ad1d1d32"
+  apiKey: "AIzaSyBEWbN1BfsNUWWOy0DpU0E7o7Ku09lcweQ",
+  authDomain: "modayestilocol.firebaseapp.com",
+  databaseURL: "https://modayestilocol-default-rtdb.firebaseio.com",
+  projectId: "modayestilocol",
+  storageBucket: "modayestilocol.firebasestorage.app",
+  messagingSenderId: "794561383601",
+  appId: "1:794561383601:web:e11695d3b9ccfd2659a690"
 };
 
-firebase.initializeApp(firebaseConfig);
+// ✅ Solo inicializa Firebase si aún no se ha hecho
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+// ✅ Exporta Firestore para usarlo globalmente
 const db = firebase.firestore();
+
 
   db.collection("configuracion").doc("footer").get().then(doc => {
   if (doc.exists) {
@@ -44,6 +51,21 @@ const db = firebase.firestore();
   console.error("❌ Error cargando configuración:", error);
 });
 
+// ✅ Cargar título desde Firebase
+db.collection("configuracion").doc("general").get().then(doc => {
+  if (doc.exists) {
+    const c = doc.data();
+    if (c.titulo) {
+      document.querySelector("header h1").textContent = c.titulo;
+      document.title = c.titulo; // opcional: cambia el <title> de la pestaña
+    }
+  } else {
+    console.warn("⚠️ No se encontró título en Firestore.");
+  }
+}).catch(err => {
+  console.error("❌ Error cargando título:", err);
+});
+
 
 db.collection("contenido").doc("quienesSomos").get().then(doc => {
   if (doc.exists) {
@@ -57,6 +79,7 @@ db.collection("contenido").doc("quienesSomos").get().then(doc => {
 // Carrito inicial
 let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
 
+
 function actualizarCarrito() {
   const div = document.getElementById('carrito');
   div.innerHTML = '';
@@ -68,58 +91,44 @@ function actualizarCarrito() {
     return;
   }
 
-  // 👉 Separar productos con precios por cantidad
-  const conPromo = carrito.filter(p => p.preciosPorCantidad);
-  const sinPromo = carrito.filter(p => !p.preciosPorCantidad);
-
+  const conPromo = carrito.filter(p => p.preciosPorCantidad && Object.keys(p.preciosPorCantidad).length > 0);
+  const sinPromo = carrito.filter(p => !p.preciosPorCantidad || Object.keys(p.preciosPorCantidad).length === 0);
   const totalPromo = conPromo.reduce((sum, p) => sum + (p.cantidad || 1), 0);
 
-  // ✅ Solo aplicar si hay 2 o más productos con promoción
-  if (totalPromo >= 2) {
-    // Calcular mejor precio global
-    let mejorMatch = 1;
-    let preciosGlobales = [];
-
-    // Juntar todos los escalones posibles
-    conPromo.forEach(p => {
-      const escalones = Object.keys(p.preciosPorCantidad || {});
-      preciosGlobales = preciosGlobales.concat(escalones.map(e => parseInt(e)));
+  let escalones = {};
+  conPromo.forEach(p => {
+    Object.entries(p.preciosPorCantidad).forEach(([cantidad, precio]) => {
+      const cant = parseInt(cantidad);
+      const prec = parseInt(precio);
+      if (!escalones[cant] || prec < escalones[cant]) {
+        escalones[cant] = prec;
+      }
     });
-
-    preciosGlobales = [...new Set(preciosGlobales)].sort((a, b) => a - b);
-
-    preciosGlobales.forEach(cant => {
-      if (totalPromo >= cant) mejorMatch = cant;
-    });
-
-    conPromo.forEach(p => {
-  const precios = p.preciosPorCantidad;
-  const cantidades = Object.keys(precios).map(c => parseInt(c)).sort((a, b) => a - b);
-  let mejorMatch = 1;
-
-  cantidades.forEach(cant => {
-    if (totalPromo >= cant) mejorMatch = cant;
   });
 
-  // ⚠️ Dividir el precio del combo entre los pares del combo
-  const precioCombo = parseInt(precios[mejorMatch]);
-  const precioUnitario = Math.round(precioCombo / mejorMatch);
+  const escalonesOrdenados = Object.keys(escalones).map(Number).sort((a, b) => a - b);
+  let mejorEscalon = 1;
+  escalonesOrdenados.forEach(cant => {
+    if (totalPromo >= cant) mejorEscalon = cant;
+  });
 
-  p.precioAplicado = precioUnitario;
-  p.promocionAplicada = true;
-});
-
+  if (mejorEscalon > 1) {
+    const precioTotalCombo = escalones[mejorEscalon];
+    const precioUnitario = Math.round(precioTotalCombo / mejorEscalon);
+    conPromo.forEach(p => {
+      p.precioAplicado = precioUnitario;
+      p.promocionAplicada = true;
+      p.escalonAplicado = mejorEscalon;
+      p.comboPrecioTotal = precioTotalCombo;
+    });
   } else {
-    // Si hay solo 1 con promo, aplicar precio normal
     conPromo.forEach(p => {
       p.precioAplicado = p.precio;
       p.promocionAplicada = false;
     });
   }
 
-  // Juntar todo
   const carritoCompleto = [...conPromo, ...sinPromo];
-
   let total = 0;
   let ahorroTotal = 0;
 
@@ -127,50 +136,94 @@ function actualizarCarrito() {
     const tarjeta = document.createElement('div');
     tarjeta.className = 'item-carrito-elegante';
 
-    const precioOriginal = item.precio;
+    const precioOriginal = item.precioOriginal || item.precio;
     const precioFinal = item.precioAplicado || precioOriginal;
+    const cantidad = item.cantidad || 1;
+    const totalProducto = precioFinal * cantidad;
+    const ahorro = (precioOriginal - precioFinal) * cantidad;
 
-    total += precioFinal;
-
-    const ahorro = precioOriginal - precioFinal;
+    total += totalProducto;
     if (ahorro > 0) ahorroTotal += ahorro;
 
-   const cantidadPar = item.cantidad || 1;
-const textoCantidad = cantidadPar === 1 ? "1 par" : `${cantidadPar} pares`;
-const totalProducto = cantidadPar * precioFinal;
+    const textoCantidad = cantidad === 1 ? "1 par" : `${cantidad} pares`;
 
-tarjeta.innerHTML = `
-  <div class="carrito-info">
-    <div class="info-superior">
-      <h4>${item.nombre} - ${textoCantidad}</h4>
-    </div>
-    <p>🎨 Color: <strong>${item.color}</strong></p>
-    <p class="subitem-talla">
-      <span>📏 Talla: <strong>${item.talla}</strong> - 💲 Total: $${totalProducto.toLocaleString()}</span>
-      <span class="icono-eliminar" onclick="eliminarProducto(event, ${index})">❌</span>
-    </p>
-    <p style="font-size: 0.9rem; margin: 0.3rem 0;">
-      💲 Precio unitario: $${precioFinal.toLocaleString()}
-    </p>
-    ${item.promocionAplicada ? `<p style="color: green; font-weight: bold;">💥 Precio por cantidad aplicado</p>` : ''}
-  </div>
-`;
-
+    tarjeta.innerHTML = `
+      <div class="carrito-info">
+        <div class="info-superior">
+          <h4>${item.nombre} - ${textoCantidad}</h4>
+        </div>
+        <p>🎨 Color: <strong>${item.color}</strong></p>
+        <p class="subitem-talla">
+          <span>📏 Talla: <strong>${item.talla}</strong></span>
+          <span class="icono-eliminar" onclick="eliminarProducto(event, ${index})">❌</span>
+        </p>
+      </div>
+    `;
 
     div.appendChild(tarjeta);
   });
 
+  // Resumen de promoción después del carrito
+  let resumenPromocion = '';
+
+  if (mejorEscalon > 1 && escalones[mejorEscalon]) {
+    const comboAplicado = `<p style="color: green; font-weight: bold;">💥 Combo ${mejorEscalon}x: $${escalones[mejorEscalon].toLocaleString()}</p>`;
+
+    const escalonesOrdenadosFiltrados = escalonesOrdenados.filter(e => e > mejorEscalon);
+    const siguienteEscalon = escalonesOrdenadosFiltrados.length > 0 ? escalonesOrdenadosFiltrados[0] : null;
+
+    const siguienteCombo = siguienteEscalon
+      ? `<p style="color: #555; font-size: 0.9rem;">• Combo x ${siguienteEscalon}: $${escalones[siguienteEscalon].toLocaleString()}</p>`
+      : '';
+
+    const ahorroTexto = ahorroTotal > 0
+      ? `<p style="color: green;">🎉 Ahorraste: $${ahorroTotal.toLocaleString()}</p>`
+      : '';
+
+    resumenPromocion = comboAplicado + siguienteCombo + ahorroTexto;
+  }
+
   document.getElementById('total-carrito').innerHTML = `
-    <div class="total-carrito">
-      🧾 <strong>Total:</strong> <span>$${total.toLocaleString()}</span><br>
-      ${ahorroTotal > 0 ? `<span style="color: green;">🎉 Ahorraste: $${ahorroTotal.toLocaleString()}</span>` : ''}
+    ${resumenPromocion}
+    <div class="total-carrito" style="margin-top: 0.8rem;">
+      🧾 <strong>Total:</strong> <span>$${total.toLocaleString()}</span>
     </div>
   `;
 
-  localStorage.setItem('carrito', JSON.stringify(carrito));
+  localStorage.setItem('carrito', JSON.stringify(carritoCompleto));
+  carrito = carritoCompleto;
+  console.log("Carrito con datos completos:", carrito);
 }
 
 
+
+function agregarAlCarrito(producto, tallaSeleccionada, colorSeleccionado) {
+  const productoSeleccionado = {
+    id: producto.id,
+    nombre: producto.nombre,
+    precio: producto.precio,
+    precioOriginal: producto.precioOriginal || producto.precio,
+    talla: tallaSeleccionada,
+    color: colorSeleccionado,
+    cantidad: 1,
+    imagen: producto.imagen,
+   preciosPorCantidad: producto.preciosPorCantidad ? { ...producto.preciosPorCantidad } : {}
+
+  };
+
+  // ✅ Asegúrate que preciosPorCantidad quede como números
+  if (productoSeleccionado.preciosPorCantidad) {
+    Object.keys(productoSeleccionado.preciosPorCantidad).forEach(key => {
+      productoSeleccionado.preciosPorCantidad[key] = Number(productoSeleccionado.preciosPorCantidad[key]);
+    });
+  }
+
+  carrito.push(productoSeleccionado);
+  console.log("Carrito actualizado:", carrito); // para verificar en consola
+  actualizarCarrito();
+    mostrarNotificacion("✅ Producto agregado"); // 👈 Aquí se muestra el mensaje
+
+}
 
 function eliminarTalla(id, color, talla) {
   const index = carrito.findIndex(item => item.id === id && item.color === color && item.talla === talla);
@@ -246,16 +299,22 @@ function guardarQuienesSomos() {
     .catch(err => alert("❌ Error al guardar: " + err.message));
 }
 
-    function mostrarNotificacion(mensaje = "Producto agregado") {
-      const notif = document.getElementById("notificacion");
-      notif.textContent = mensaje;
-      notif.classList.remove("oculto");
-      notif.classList.add("mostrar");
-      setTimeout(() => {
-        notif.classList.remove("mostrar");
-        notif.classList.add("oculto");
-      }, 3000);
-    }
+function mostrarNotificacion(mensaje = "Producto agregado") {
+  const notif = document.getElementById("notificacion");
+  notif.textContent = mensaje;
+  notif.classList.remove("oculto");
+  notif.classList.add("mostrar");
+
+  // 🔊 Reproducir sonido de confirmación
+  const audio = new Audio('https://notificationsounds.com/storage/sounds/file-sounds-1156-pristine.mp3');
+  audio.play();
+
+  setTimeout(() => {
+    notif.classList.remove("mostrar");
+    notif.classList.add("oculto");
+  }, 3000);
+}
+
 
 
 
@@ -292,11 +351,18 @@ function guardarQuienesSomos() {
   let mensaje = `📦 *NUEVO PEDIDO*\n\n🗓️ *Fecha:* ${fechaFormateada}\n\n`;
 
  carrito.forEach((item, i) => {
-  mensaje += `🥿 *Producto ${i + 1}*: ${item.nombre} - Color: ${item.color} - Talla: ${item.talla} - Cantidad: ${item.cantidad} par${item.cantidad > 1 ? 'es' : ''} - Total: $${parseInt(item.precio).toLocaleString()}\n`;
+const precioFinal = item.precioAplicado || item.precio;
+const totalProducto = precioFinal * item.cantidad;
+
+mensaje += `🥿 *Producto ${i + 1}*: ${item.nombre} - Color: ${item.color} - Talla: ${item.talla} - Cantidad: ${item.cantidad} par${item.cantidad > 1 ? 'es' : ''} - Total: $${totalProducto.toLocaleString()}\n`;
 
 });
 
-  const total = carrito.reduce((acc, item) => acc + parseInt(item.precio), 0);
+  const total = carrito.reduce((acc, item) => {
+  const precioFinal = item.precioAplicado || item.precio;
+  return acc + precioFinal * item.cantidad;
+}, 0);
+
 mensaje += `\n💰 *Total:* $${total.toLocaleString()}\n\n`;
   mensaje += `📍 *Nombre:* ${campos.nombre}\n`;
   mensaje += `🏛️ *Departamento:* ${campos.departamento}\n`;
@@ -433,6 +499,7 @@ function cargarProductosDesdeFirebase() {
       const contenedorProducto = document.createElement("div");
       contenedorProducto.className = "producto";
       contenedorProducto.setAttribute("data-id", id);
+      contenedorProducto.setAttribute("data-precios", JSON.stringify(p.preciosPorCantidad || {}));
       contenedorProducto.setAttribute("data-imagenes", JSON.stringify(p.imagenes || {}));
       contenedorProducto.setAttribute("data-descuento-fijo", porcentaje);
 
@@ -446,18 +513,34 @@ function cargarProductosDesdeFirebase() {
             `<img src="${url}" alt="${color}" class="img-mini" data-color="${color}">`).join("")}
         </div>
 
-       <div class="carrusel-letrero">
-  <p>
-    ${Object.entries(p.preciosPorCantidad || {}).map(([cant, precio]) =>
-      `${cant} par${cant > 1 ? 'es' : ''} - $${parseInt(precio).toLocaleString()}`
-    ).join(" • ")}
-  </p>
-</div>
+    ${
+  p.preciosPorCantidad && Object.keys(p.preciosPorCantidad).length > 0
+    ? (() => {
+        const preciosTexto = Object.entries(p.preciosPorCantidad).map(([cant, precio]) =>
+          `${cant} par${cant > 1 ? 'es' : ''} - $${parseInt(precio).toLocaleString()}`
+        ).join(" • ");
+
+        const promoTexto = (window.textoPromocionCantidad || "").replace(/\n/g, " ");
+
+        const textoFinal = `${preciosTexto} ${promoTexto}`;
+         const espacios = "&nbsp;".repeat(3); // Ajusta la cantidad para más o menos espacio
+         const textoExtendido = `${espacios}${textoFinal} `.repeat(3);
+
+        return `
+          <div class="carrusel-letrero">
+            <div class="letrero-movimiento">
+              <span>${textoExtendido}</span>
+            </div>
+          </div>`;
+      })()
+    : ""
+}
+
 
 
         <h2>${p.nombre}</h2>
 
-        <div class="descripcion-expandible">
+      <div class="descripcion-expandible">
           <button class="btn-ver-descripcion">Ver descripción</button>
           <p class="descripcion-texto">${p.descripcion || "Sin descripción"}</p>
         </div>
@@ -538,6 +621,7 @@ document.getElementById("buscadorProductos").addEventListener("input", function 
   });
 });
 
+
 function obtenerProductos() {
   const contenedor = document.getElementById("productos");
   contenedor.innerHTML = "";
@@ -607,43 +691,40 @@ function inicializarCarruselInteractivo(producto) {
     });
   });
 
-    boton.addEventListener('click', () => {
-    if (!colorSeleccionado || !tallaSeleccionada) {
-      alert("Selecciona color y talla antes de agregar al carrito.");
-      return;
+  boton.addEventListener('click', () => {
+  if (!colorSeleccionado || !tallaSeleccionada) {
+    alert("Selecciona color y talla antes de agregar al carrito.");
+    return;
+  }
+
+  const productoId = producto.getAttribute("data-id");
+  const imagen = mainImg.src;
+  const precioBase = parseInt(producto.querySelector('.precio-producto').getAttribute("data-precio"));
+  const precioOriginal = parseInt(producto.querySelector('.precio-producto').getAttribute("data-precio-original"));
+  const nombre = producto.querySelector("h2").textContent;
+
+  // ✅ Extraer preciosPorCantidad desde el atributo data-precios
+  let preciosPorCantidad = null;
+  const rawPrecios = producto.getAttribute("data-precios");
+  if (rawPrecios) {
+    try {
+      preciosPorCantidad = JSON.parse(rawPrecios);
+    } catch (e) {
+      console.warn("❌ Error parseando preciosPorCantidad:", e);
+      preciosPorCantidad = null;
     }
+  }
 
-    let preciosPorCantidad = null;
-
-    if (cantidadSelect) {
-      preciosPorCantidad = {};
-      Array.from(cantidadSelect.options).forEach(opt => {
-        preciosPorCantidad[parseInt(opt.value)] = parseInt(opt.getAttribute("data-precio"));
-      });
-    }
-
-    const productoId = producto.getAttribute("data-id");
-    const imagen = mainImg.src;
-    const precioBase = parseInt(producto.querySelector('.precio-producto').getAttribute("data-precio"));
-
-    carrito.push({
-      id: productoId,
-      nombre,
-      color: colorSeleccionado,
-      talla: tallaSeleccionada,
-      cantidad: 1,
-      precio: preciosPorCantidad?.[1] || precioBase,
-      preciosPorCantidad,
-      imagen
-    });
-
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-    actualizarCarrito();
-    mostrarNotificacion();
-  });
-
+  agregarAlCarrito({
+    id: productoId,
+    nombre,
+    precio: precioBase,
+    precioOriginal,
+    imagen,
+    preciosPorCantidad,
+  }, tallaSeleccionada, colorSeleccionado);
+});
 }
-
 
     function hacerCarruselInfinito(carrusel, claseItem) {
       const originales = Array.from(carrusel.querySelectorAll(claseItem));
@@ -760,24 +841,52 @@ function cargarOpcionesMetodoPago() {
   });
 }
 
+function vaciarCarrito() {
+  carrito = [];
+  localStorage.removeItem('carrito');
+  actualizarCarrito();
+}
+
 
 function cargarGaleriaDesdeFirebase() {
   const carrusel = document.getElementById('carruselGaleria');
   const descripcion = document.getElementById('textoGaleria');
+  const textoPromoContenedor = document.getElementById("textoPromocionCantidad");
+
 
   db.collection('galeria').doc('principal').get().then(doc => {
     if (!doc.exists) return;
 
     const data = doc.data();
-    descripcion.textContent = data.descripcion || "";
+    const imagenes = data.imagenes || [];
+    const descripcionTexto = data.descripcion || "";
+    const textoPromocion = data.textoPromocion || "";
 
-    // Agregar imágenes duplicadas para scroll infinito
-    const imagenes = [...data.imagenes, ...data.imagenes];
-    carrusel.innerHTML = imagenes.map(url => `
-      <img src="${url}" class="miniatura" alt="galería">
-    `).join('');
+    // Mostrar descripción general (si la tienes en otro bloque)
+    if (descripcion) {
+      descripcion.textContent = descripcionTexto;
+    }
+
+    // Mostrar texto promocional dinámico en galería
+    if (textoPromoContenedor) {
+      textoPromoContenedor.textContent = textoPromocion;
+    }
+
+    // Guardar texto para usarlo en otro lado (por ejemplo en app.js para promociones)
+    window.textoPromocionCantidad = textoPromocion;
+
+    // Mostrar imágenes duplicadas para scroll infinito
+    const imagenesDuplicadas = [...imagenes, ...imagenes];
+    if (carrusel) {
+      carrusel.innerHTML = imagenesDuplicadas.map(url => `
+        <img src="${url}" class="miniatura" alt="galería">
+      `).join('');
+    }
+  }).catch((error) => {
+    console.error("Error al cargar galería:", error);
   });
 }
+
 
 
   function irAInicio() {
@@ -791,12 +900,21 @@ window.confirmarEnvioWhatsApp = confirmarEnvioWhatsApp;
 
 
 
-window.addEventListener("DOMContentLoaded", () => {
+
+
+window.addEventListener("DOMContentLoaded", async () => {
   actualizarCarrito();
+
+  // Esperar a que se cargue primero la galería (donde viene textoPromocionCantidad)
+  await cargarGaleriaDesdeFirebase();
+
+  // Luego sí cargar productos
   cargarProductosDesdeFirebase();
-   cargarMetodosPagoPublico(); // ✅ Aquí
-cargarOpcionesMetodoPago();
-cargarGaleriaDesdeFirebase();
+
+  cargarMetodosPagoPublico();
+  cargarOpcionesMetodoPago();
+
+
 
 document.addEventListener("click", (event) => {
   const formulario = document.getElementById("formularioCliente");

@@ -14,6 +14,7 @@
 --fondo-buscador: #eae0e6;
 --borde-input: #a3a0a0;
 --sombra-botones: 0 6px 18px rgba(255, 255, 255, 0.2);
+--color-principal-hover: #0056b3;
 
 }
 
@@ -124,7 +125,7 @@ header h1 {
 }
 
 .barra-navegacion a:hover {
-  background-color: #ecf0ed;
+  background-color: #ffffff;
   color: #000;
   border-color: #000000;
 }
@@ -151,13 +152,13 @@ header h1 {
   font-size: 1rem;
   border-radius: 12px;
   border: 2px solid #000000;
-  background-color: #e9e7e8;
+  background-color: #fefefe;
   color: rgb(0, 0, 0);
   outline: none;
 }
 
 #buscadorProductos::placeholder {
-  color: white;
+  color: rgb(85, 84, 84);
 }
 
 .icono-lupa {
@@ -165,7 +166,7 @@ header h1 {
   left: 0.9rem;
   top: 50%;
   transform: translateY(-50%);
-  color: white;
+  color: rgb(84, 84, 84);
   font-size: 1rem;
   pointer-events: none;
 }
@@ -876,11 +877,15 @@ body.dark-mode button {
   transform: scale(1.08);
 }
 
-.descripcion-general {
-  margin-top: 1rem;
-    white-space: pre-wrap; /* 👉 mantiene saltos de línea y se adapta */
 
+
+.descripcion-general {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding: 0 1rem;
+  color: var(--color-texto);
 }
+
 
 @keyframes scrollInfinite {
   0%   { transform: translateX(0); }
@@ -894,25 +899,57 @@ body.dark-mode button {
 .carrusel-letrero {
   overflow: hidden;
   white-space: nowrap;
-  box-sizing: border-box;
-  background: #ffffff;
-  color: #000000;
-  padding: 0.4rem 0;
-  margin: 0.6rem auto;
-  font-size: 0.9rem;
-  font-weight: bold;
+  position: relative;
+  background: #f2fdf2;
   border-radius: 8px;
-  max-width: 100%;
-  text-align: center;
+  padding: 0.3rem 0;
+  margin: 0.5rem 0;
 }
 
-.carrusel-letrero p {
+.letrero-movimiento {
   display: inline-block;
-  padding-left: 100%;
-  animation: deslizarLetrero 15s linear infinite;
+  white-space: nowrap;
+  animation: deslizar 60s linear infinite; /* antes era 15s */
 }
 
-@keyframes deslizarLetrero {
-  0% { transform: translateX(0); }
+.letrero-movimiento span {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #000000;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+
+@keyframes deslizar {
+  0%   { transform: translateX(0%); }
   100% { transform: translateX(-100%); }
+}
+
+
+
+/* ===================================
+   🏷 carrusel de descuento extra*/
+
+
+#notificacion {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #62fc62;
+  color: #000000;
+  padding: 1rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  max-width: 90vw;
+  pointer-events: none;
+}
+
+#notificacion.mostrar {
+  opacity: 1;
+  pointer-events: auto;
 }

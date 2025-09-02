@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
- <meta charset="utf-8"/>
+  <meta charset="utf-8" />
   <title>Moda & Estilo</title>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -17,126 +15,122 @@
   <link rel="icon" href="favicon.ico">
   <link href="style.css" rel="stylesheet"/>
 
-  <!-- Tu script principal -->
+  <!-- Script principal -->
   <script defer src="app.js"></script>
+</head>
 <body>
 
-<!-- Encabezado -->
-<header id="inicio" onclick="irAInicio()" style="cursor: pointer;">
-  <h1>Moda & Estilo</h1>
-</header>
+  <!-- Encabezado -->
+  <header id="inicio" onclick="irAInicio()" style="cursor: pointer;">
+    <h1>Moda & Estilo</h1>
+  </header>
+
+  <!-- Notificación -->
+  <div id="notificacion" class="oculto"></div>
 
   
- <!-- Navegación -->
+  <!-- Navegación -->
   <nav class="barra-navegacion">
     <a href="#inicio">Inicio</a>
     <a href="#quienes-somos">Nosotros</a>
     <a href="#footer">Contáctanos</a>
   </nav>
 
-<!-- Buscador -->
-<div id="bloque-buscador">
-  <div class="contenedor-buscador">
-    <i class="fas fa-search icono-lupa"></i>
-    <input type="text" id="buscadorProductos" placeholder="Buscar productos...">
-  </div>
-</div>
-
-<div style="height: 30px;"></div>
-<div id="notificacion" class="notificacion oculto">Agregado</div>
-
-
-<!-- Botón que despliega TODO -->
-<div class="fila-carrito">
-  <button class="btn-azul icono-carrito-fijo" onclick="toggleCarrito()">🛒</button>
-</div>
-
-<!-- Contenedor de todo: carrito, total, botones y formulario -->
-<div id="bloqueCarrito" class="container">
-  <span class="cerrar-carrito" onclick="toggleCarrito()">🛒</span>
-
-  <div id="carrito"></div>
-  <div id="total-carrito"></div>
-
-  <!-- Botón Finalizar compra -->
-  <div style="text-align:center; margin-top: 1rem;">
-    <button class="btn-verde" onclick="mostrarFormulario()">✅ Finalizar compra</button>
-  </div>
-
-  <!-- Formulario de cliente (modal) -->
-  <div id="formularioCliente">
-    <div id="formularioContenido">
-      <form onsubmit="event.preventDefault(); confirmarEnvioWhatsApp();">
-
-        <div class="campo-formulario">
-          <label for="nombreCliente">👤 Nombre completo</label>
-          <input id="nombreCliente" type="text" required />
-        </div>
-
-        <div class="campo-formulario">
-          <label for="departamentoCliente">🏛️ Departamento</label>
-          <input id="departamentoCliente" type="text" required />
-        </div>
-
-        <div class="campo-formulario">
-          <label for="ciudadCliente">🏙️ Ciudad</label>
-          <input id="ciudadCliente" type="text" required />
-        </div>
-
-        <div class="campo-formulario">
-          <label for="direccionCliente">🏠 Dirección</label>
-          <input id="direccionCliente" type="text" required />
-        </div>
-
-        <div class="campo-formulario">
-          <label for="celularCliente">📞 Celular</label>
-          <input id="celularCliente" type="tel" pattern="[0-9]{10}" placeholder="Ej: 3111234567" maxlength="10" required />
-        </div>
-
-        <div class="campo-formulario">
-          <label for="metodoPagoCliente">💳 Selecciona tu método de pago</label>
-          <select id="metodoPagoCliente" required>
-            <option value="">Selecciona una opción</option>
-          </select>
-        </div>
-
-        <div class="botones">
-          <button type="submit" class="btn-verde">📲 Enviar pedido por WhatsApp</button>
-          <button type="button" class="btn-gris" onclick="ocultarFormulario()">🔙 Volver</button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-</div>
-
-
-<div id="contenedor-productos" class="grid-productos"></div>
-
-
-
-
-<section id="quienes-somos">
-  <h2>Quiénes somos</h2>
-  <p id="contenido-quienes-somos">Cargando información...</p>
-</section>
-
-
-
-  <div class="bloque-carrusel">
-  <div class="carrusel-ventana">
-    <div class="carrusel-infinito contenedor-carrusel" id="carruselGaleria">
-      <!-- Se llenará dinámicamente -->
+  <!-- Buscador -->
+  <div id="bloque-buscador">
+    <div class="contenedor-buscador">
+      <i class="fas fa-search icono-lupa"></i>
+      <input type="text" id="buscadorProductos" placeholder="Buscar productos...">
     </div>
   </div>
 
+  <!-- Botón flotante del carrito -->
+  <div class="fila-carrito">
+    <button class="btn-azul icono-carrito-fijo" onclick="toggleCarrito()">🛒</button>
+  </div>
+
+  <!-- Carrito + formulario -->
+  <div id="bloqueCarrito" class="container">
+    <span class="cerrar-carrito" onclick="toggleCarrito()">🛒</span>
+
+    <div id="carrito"></div>
+    <div id="total-carrito"></div>
+
+    <div style="text-align:center; margin-top: 1rem;">
+      <button class="btn-verde" onclick="mostrarFormulario()">✅ Finalizar compra</button>
+    </div>
+
+    <!-- Formulario de cliente -->
+    <div id="formularioCliente">
+      <div id="formularioContenido">
+        <form onsubmit="event.preventDefault(); confirmarEnvioWhatsApp();">
+          <div class="campo-formulario">
+            <label for="nombreCliente">👤 Nombre completo</label>
+            <input id="nombreCliente" type="text" required />
+          </div>
+
+          <div class="campo-formulario">
+            <label for="departamentoCliente">🏛️ Departamento</label>
+            <input id="departamentoCliente" type="text" required />
+          </div>
+
+          <div class="campo-formulario">
+            <label for="ciudadCliente">🏙️ Ciudad</label>
+            <input id="ciudadCliente" type="text" required />
+          </div>
+
+          <div class="campo-formulario">
+            <label for="direccionCliente">🏠 Dirección</label>
+            <input id="direccionCliente" type="text" required />
+          </div>
+
+          <div class="campo-formulario">
+            <label for="celularCliente">📞 Celular</label>
+            <input id="celularCliente" type="tel" pattern="[0-9]{10}" placeholder="Ej: 3111234567" maxlength="10" required />
+          </div>
+
+          <div class="campo-formulario">
+            <label for="metodoPagoCliente">💳 Selecciona tu método de pago</label>
+            <select id="metodoPagoCliente" required>
+              <option value="">Selecciona una opción</option>
+            </select>
+          </div>
+
+          <div class="botones">
+            <button type="submit" class="btn-verde">📲 Enviar pedido por WhatsApp</button>
+            <button type="button" class="btn-gris" onclick="ocultarFormulario()">🔙 Volver</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Productos -->
+  <div id="contenedor-productos" class="grid-productos"></div>
+
+  <!-- Quiénes somos -->
+  <section id="quienes-somos">
+    <h2>Quiénes somos</h2>
+    <p id="contenido-quienes-somos">Cargando información...</p>
+  </section>
+
+  <!-- Galería -->
+<div class="bloque-carrusel">
+  <!-- Primero el texto -->
   <div class="descripcion-general">
     <p id="textoGaleria"></p>
   </div>
+
+  <!-- Luego el carrusel de imágenes -->
+  <div class="carrusel-ventana">
+    <div class="carrusel-infinito contenedor-carrusel" id="carruselGaleria">
+      <!-- Imágenes dinámicas -->
+    </div>
+  </div>
 </div>
 
-
-   <footer id="footer"style="text-align: center; padding: 1rem; background: #2d3b49; color: white;">
+  <!-- Footer -->
+  <footer id="footer" style="text-align: center; padding: 1rem; background: #2d3b49; color: white;">
     <div style="font-size: 1.8rem;">
       <a href="#" target="_blank" class="facebook-link" style="margin: 0 10px; color: #0e54eb;">
         <i class="fab fa-facebook"></i>
@@ -152,8 +146,6 @@
       &copy; 2025 Moda & Estilo. Todos los derechos reservados.
     </div>
   </footer>
-
-<script src="app.js"></script>
 
 </body>
 </html>

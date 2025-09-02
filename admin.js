@@ -1,13 +1,16 @@
 // ✅ Configuración de Firebase ya personalizada
 
     // ✅ Configuración de Firebase
+
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCozJXTEJct407_E6CpjLSK6EOZgk-W8fc",
-  authDomain: "modaestil0.firebaseapp.com",
-  projectId: "modaestil0",
-  storageBucket: "modaestil0.appspot.com",
-  messagingSenderId: "277454254263",
-  appId: "1:277454254263:web:8de217a8c39e25ad1d1d32"
+  apiKey: "AIzaSyBEWbN1BfsNUWWOy0DpU0E7o7Ku09lcweQ",
+  authDomain: "modayestilocol.firebaseapp.com",
+  databaseURL: "https://modayestilocol-default-rtdb.firebaseio.com",
+  projectId: "modayestilocol",
+  storageBucket: "modayestilocol.firebasestorage.app",
+  messagingSenderId: "794561383601",
+  appId: "1:794561383601:web:e11695d3b9ccfd2659a690"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -69,15 +72,21 @@ function cerrarSesion() {
 }
 
 function mostrarSeccion(id) {
-  document.querySelectorAll(".seccion").forEach(seccion => {
-    seccion.classList.remove("activa");
-  });
+  const seccion = document.getElementById(`seccion-${id}`);
+  if (!seccion) return;
 
-  const activa = document.getElementById(`seccion-${id}`);
-  if (activa) {
-    activa.classList.add("activa");
+  const yaActiva = seccion.classList.contains("activa");
+
+  // Ocultar todas
+  document.querySelectorAll(".seccion").forEach(sec => sec.classList.remove("activa"));
+
+  // Si no estaba activa, mostrarla; si ya estaba, se oculta
+  if (!yaActiva) {
+    seccion.classList.add("activa");
   }
 }
+
+
 
 
     function toggleConfiguracionFooter() {
@@ -189,14 +198,19 @@ function agregarProducto() {
     });
 }
 
+function eliminarProductoAdmin(id) {
+  if (!confirm("¿Estás seguro de eliminar este producto?")) return;
+  db.collection("productos").doc(id).delete()
+    .then(() => {
+      alert("✅ Producto eliminado correctamente");
+      obtenerProductos(); // Recarga lista después de eliminar
+    })
+    .catch(error => {
+      console.error("❌ Error al eliminar producto:", error);
+      alert("Ocurrió un error al eliminar el producto.");
+    });
+}
 
-    function eliminarProducto(id) {
-      if (confirm("¿Eliminar este producto?")) {
-        db.collection("productos").doc(id).delete()
-          .then(() => alert("✅ Producto eliminado."))
-          .catch(err => alert("❌ Error al eliminar: " + err.message));
-      }
-    }
 
 function limpiarFormularioProducto() {
   document.getElementById("nuevoNombre").value = "";
@@ -248,7 +262,8 @@ function limpiarFormularioProducto() {
 
 <div class="acciones">
   <button class="btn-verde" onclick="editarProducto('${doc.id}')">✏️ Editar</button>
-  <button class="btn-rojo" onclick="eliminarProducto('${doc.id}')">❌ Eliminar</button>
+  <button onclick="eliminarProductoAdmin('${doc.id}')" class="btn-rojo">❌ Eliminar</button>
+
 </div>
 
 <p style="font-size: 13px; color: #333;">📦 Precios por cantidad:<br>
@@ -381,24 +396,38 @@ const data = {
     });
 }
 
-    function guardarConfiguracion() {
-      const config = {
-        whatsapp: document.getElementById("configWhatsapp").value.trim(),
-        whatsappPedidos: document.getElementById("configWspPedido").value.trim(),
-        facebook: document.getElementById("configFacebook").value.trim(),
-        instagram: document.getElementById("configInstagram").value.trim(),
-        tiktok: document.getElementById("configTikTok").value.trim()
-      };
+function guardarConfiguracion() {
+  const config = {
+    titulo: document.getElementById("tituloPrincipal").value.trim(),
+    whatsapp: document.getElementById("configWhatsapp").value.trim(),
+    whatsappPedidos: document.getElementById("configWspPedido").value.trim(),
+    facebook: document.getElementById("configFacebook").value.trim(),
+    instagram: document.getElementById("configInstagram").value.trim(),
+    tiktok: document.getElementById("configTikTok").value.trim()
+  };
 
-      db.collection("configuracion").doc("footer").set(config)
-        .then(() => {
-          alert("✅ Configuración guardada correctamente.");
-        })
-        .catch(err => {
-          console.error("Error al guardar configuración:", err);
-          alert("❌ No se pudo guardar la configuración.");
-        });
-    }
+  db.collection("configuracion").doc("general").set(config)
+    .then(() => {
+      alert("✅ Configuración guardada correctamente.");
+    })
+    .catch(err => {
+      console.error("Error al guardar configuración:", err);
+    });
+}
+
+// ✅ Al cargar admin, traer config existente
+db.collection("configuracion").doc("general").get().then(doc => {
+  if (doc.exists) {
+    const c = doc.data();
+    if (c.titulo) document.getElementById("tituloPrincipal").value = c.titulo;
+    if (c.whatsapp) document.getElementById("configWhatsapp").value = c.whatsapp;
+    if (c.whatsappPedidos) document.getElementById("configWspPedido").value = c.whatsappPedidos;
+    if (c.facebook) document.getElementById("configFacebook").value = c.facebook;
+    if (c.instagram) document.getElementById("configInstagram").value = c.instagram;
+    if (c.tiktok) document.getElementById("configTikTok").value = c.tiktok;
+  }
+});
+
 
     function cargarConfiguracion() {
       db.collection("configuracion").doc("footer").get()
@@ -510,10 +539,12 @@ async function guardarGaleriaPorLinks() {
     }
 
     // 🔧 Guardar en Firestore
-    await db.collection("galeria").doc("principal").set({
-      descripcion,
-      imagenes: links
-    });
+   await db.collection("galeria").doc("principal").set({
+  descripcion,
+  imagenes: links,
+  textoPromocion: document.getElementById("textoPromocionCantidad").value.trim()
+});
+
 
     console.log("✅ Documento guardado en galeria/principal");
     document.getElementById("estadoSubida").textContent = "✅ Galería guardada correctamente.";
@@ -525,28 +556,6 @@ async function guardarGaleriaPorLinks() {
   }
 }
 
-function guardarGaleriaPorLinks() {
-  const descripcion = document.getElementById("inputDescripcion").value.trim();
-  const linksTexto = document.getElementById("inputLinks").value.trim();
-  const links = linksTexto.split(/\r?\n/).map(link => link.trim()).filter(link => link);
-
-  if (!descripcion || links.length === 0) {
-    alert("Debe ingresar una descripción y al menos una imagen.");
-    return;
-  }
-
-  db.collection("galeria").doc("inicio").set({
-    descripcion,
-    imagenes: links,
-    actualizacion: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    document.getElementById("estadoSubida").textContent = "✅ Galería guardada correctamente.";
-    setTimeout(() => document.getElementById("estadoSubida").textContent = "", 3000);
-  }).catch(error => {
-    console.error("Error al guardar galería:", error);
-    alert("Error guardando galería.");
-  });
-}
 
 function obtenerProductos() {
   const contenedor = document.getElementById("productos");
@@ -565,7 +574,8 @@ function obtenerProductos() {
           <img src="${imagen}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px;">
           <strong>${p.nombre}</strong><br>
           <span>$${p.precio?.toLocaleString()}</span>
-          <button onclick="eliminarProducto('${doc.id}')" class="btn-rojo">❌ Eliminar</button>
+          <button onclick="eliminarProductoAdmin('${doc.id}')" class="btn-rojo">❌ Eliminar</button>
+
         `;
         contenedor.appendChild(div);
       });
@@ -575,27 +585,109 @@ function obtenerProductos() {
     });
 }
 
+function cargarGaleriaDesdeFirestore() {
+  db.collection("galeria").doc("principal").get()
+    .then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById("inputDescripcion").value = data.descripcion || "";
+        document.getElementById("textoPromocionCantidad").value = data.textoPromocion || "";
+        document.getElementById("inputLinks").value = (data.imagenes || []).join("\n");
+        mostrarVistaPreviaGaleria();
+      }
+    })
+    .catch(err => {
+      console.error("Error al cargar galería:", err);
+    });
+}
+
+
 function mostrarVistaPreviaGaleria() {
   const linksTexto = document.getElementById("inputLinks").value.trim();
   const contenedor = document.getElementById("vistaGaleria");
   contenedor.innerHTML = "";
+  contenedor.classList.remove("scroll-infinito");
 
   if (!linksTexto) return;
 
   const links = linksTexto.split(/\r?\n/).map(link => link.trim()).filter(link => link);
 
-  links.forEach(link => {
+  // Duplicar imágenes para bucle infinito
+  const totalLinks = links.concat(links); // duplicadas
+
+  totalLinks.forEach(link => {
     const img = document.createElement("img");
     img.src = link;
     img.alt = "Imagen galería";
     img.style.width = "100px";
+    img.style.height = "auto";
+    img.style.flexShrink = "0";
     img.style.margin = "5px";
     contenedor.appendChild(img);
   });
+
+  // Activar animación
+  setTimeout(() => contenedor.classList.add("scroll-infinito"), 100);
 }
 
 
 
+// 📤 Subir imagen a Imgur (sin cuenta)
+function subirImagenImgur() {
+  const archivo = document.getElementById("inputImgur").files[0];
+  const estado = document.getElementById("estadoImgur");
+  const preview = document.getElementById("previewImgur");
+
+  if (!archivo) {
+    estado.textContent = "⚠️ Selecciona una imagen primero.";
+    return;
+  }
+
+  const lector = new FileReader();
+  lector.onloadend = () => {
+    const base64Data = lector.result.split(",")[1]; // Elimina 'data:image/...;base64,'
+
+    estado.textContent = "⏳ Subiendo imagen...";
+
+    fetch("https://api.imgur.com/3/image", {
+      method: "POST",
+      headers: {
+        Authorization: "Client-ID TU_CLIENT_ID_AQUI", // 👈 Reemplaza por tu Client-ID de Imgur
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        image: base64Data,
+        type: "base64"
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const url = data.data.link;
+        estado.innerHTML = `
+          ✅ Imagen subida:<br>
+          <input type="text" value="${url}" readonly style="width: 100%; margin-top: 5px;">
+          <br><small>Copia y pega: <code>color|${url}</code></small>
+        `;
+        preview.src = url;
+        preview.style.display = "block";
+      } else {
+        estado.textContent = "❌ Error al subir la imagen.";
+        console.error(data);
+      }
+    })
+    .catch(err => {
+      estado.textContent = "❌ Error de red o CORS.";
+      console.error(err);
+    });
+  };
+
+  lector.readAsDataURL(archivo); // Convierte a base64
+}
+
+
+
+  // 🧹 Limpiar campos del formulario
 function limpiarCampos() {
   document.getElementById("nuevoNombre").value = "";
   document.getElementById("nuevoPrecio").value = "";
@@ -610,9 +702,13 @@ function limpiarCampos() {
 
 // 🔁 Ejecutar cuando el DOM esté listo
 window.addEventListener("DOMContentLoaded", () => {
-  obtenerProductos(); // ⬅️ Tu función para cargar productos
-  
+  obtenerProductos();
+  cargarConfiguracion();
+  cargarTextoQuienesSomos();
+  cargarMetodosPago();
+  cargarGaleriaDesdeFirestore(); // 👈 Agregado
 });
+
 
 // 🛑 Capturar errores globales en consola
 window.addEventListener("error", function (e) {
