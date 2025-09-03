@@ -4,7 +4,7 @@ const firebaseConfig = {
   authDomain: "modayestilocol.firebaseapp.com",
   databaseURL: "https://modayestilocol-default-rtdb.firebaseio.com",
   projectId: "modayestilocol",
-  storageBucket: "modayestilocol.firebasestorage.app",
+  storageBucket: "modayestilocol.appspot.com", // ✅ correcto
   messagingSenderId: "794561383601",
   appId: "1:794561383601:web:e11695d3b9ccfd2659a690"
 };
@@ -328,7 +328,7 @@ function guardarQuienesSomos() {
     return;
   }
 
-  db.collection("contenido").doc("quienesSomos").set({ texto: nuevoTexto })
+  db.collection("configuracion").doc("quienesSomos").set({ contenido: nuevoTexto })
     .then(() => {
       alert("✅ Sección 'Quiénes somos' actualizada correctamente.");
     })
@@ -338,11 +338,15 @@ function guardarQuienesSomos() {
     });
 }
 
-db.collection("contenido").doc("quienesSomos").get().then(doc => {
-  if (doc.exists) {
-    document.getElementById("quienesSomosTexto").value = doc.data().texto || "";
-  }
-});
+// ✅ Cargar "Quiénes Somos" en el textarea
+function cargarQuienesSomos() {
+  db.collection("configuracion").doc("quienesSomos").get().then(doc => {
+    if (doc.exists) {
+      document.getElementById("quienesSomosTexto").value = doc.data().contenido || "";
+    }
+  });
+}
+
 
 // ✅ Galería
 async function guardarGaleriaPorLinks() {
@@ -432,6 +436,8 @@ window.addEventListener("DOMContentLoaded", () => {
   cargarConfiguracion();
   cargarMetodosPago();
   cargarGaleriaDesdeFirestore();
+  cargarQuienesSomos();
+
 });
 
 // 🛑 Capturar errores globales

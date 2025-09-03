@@ -4,7 +4,7 @@ const firebaseConfig = {
   authDomain: "modayestilocol.firebaseapp.com",
   databaseURL: "https://modayestilocol-default-rtdb.firebaseio.com",
   projectId: "modayestilocol",
-  storageBucket: "modayestilocol.firebasestorage.app",
+  storageBucket: "modayestilocol.appspot.com", // ✅ correcto
   messagingSenderId: "794561383601",
   appId: "1:794561383601:web:e11695d3b9ccfd2659a690"
 };
@@ -43,25 +43,26 @@ db.collection("configuracion").doc("general").get().then(doc => {
     }
 
     // 🌐 Redes sociales (footer)
-    if (c.facebook) {
-      const fb = document.querySelector(".facebook-link");
-      if (fb) fb.href = c.facebook;
-    }
-    if (c.instagram) {
-      const ig = document.querySelector(".instagram-link");
-      if (ig) ig.href = c.instagram;
-    }
-    if (c.tiktok) {
-      const tt = document.querySelector(".tiktok-link");
-      if (tt) tt.href = c.tiktok;
-    }
+if (c.facebook) {
+  const fb = document.querySelector(".facebook-link");
+  if (fb) fb.href = c.facebook.startsWith("http") ? c.facebook : `https://${c.facebook}`;
+}
+if (c.instagram) {
+  const ig = document.querySelector(".instagram-link");
+  if (ig) ig.href = c.instagram.startsWith("http") ? c.instagram : `https://${c.instagram}`;
+}
+if (c.tiktok) {
+  const tt = document.querySelector(".tiktok-link");
+  if (tt) tt.href = c.tiktok.startsWith("http") ? c.tiktok : `https://${c.tiktok}`;
+}
+
   } else {
     console.warn("⚠️ No se encontró configuración general en Firestore.");
   }
 }).catch(error => {
   console.error("❌ Error cargando configuración general:", error);
 });
- 
+
 
     // === main.js ===
    
@@ -899,25 +900,25 @@ window.addEventListener("DOMContentLoaded", async () => {
   cargarMetodosPagoPublico();
   cargarOpcionesMetodoPago();
 
-  // ✅ Cargar sección "Quiénes somos"
-  db.collection("configuracion").doc("quienesSomos").get()
-    .then(doc => {
-      const contenedor = document.getElementById("contenido-quienes-somos");
-      if (!contenedor) return;
 
-      if (doc.exists && doc.data().contenido) {
-        contenedor.textContent = doc.data().contenido;
-      } else {
-        contenedor.textContent = "Aún no se ha configurado esta sección.";
-      }
-    })
-    .catch(err => {
-      console.error("❌ Error cargando 'Quiénes somos':", err);
-      const contenedor = document.getElementById("contenido-quienes-somos");
-      if (contenedor) {
-        contenedor.textContent = "Error al cargar la información.";
-      }
-    });
+// ✅ Mostrar sección "Quiénes somos" en index.html
+db.collection("configuracion").doc("quienesSomos")
+  .onSnapshot(doc => {
+    const contenedor = document.getElementById("contenido-quienes-somos");
+    if (!contenedor) return; // si no existe en el DOM, salir
+
+    if (doc.exists && doc.data().contenido) {
+      contenedor.textContent = doc.data().contenido;
+    } else {
+      contenedor.textContent = "Aún no se ha configurado esta sección.";
+    }
+  }, err => {
+    console.error("❌ Error cargando 'Quiénes somos':", err);
+    const contenedor = document.getElementById("contenido-quienes-somos");
+    if (contenedor) {
+      contenedor.textContent = "Error al cargar la información.";
+    }
+  });
 
 
 document.addEventListener("click", (event) => {
