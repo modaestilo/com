@@ -1,67 +1,73 @@
-// firebase-config.js
+// =============================
+// 🔥 Inicialización Firebase
+// =============================
 const firebaseConfig = {
   apiKey: "AIzaSyBEWbN1BfsNUWWOy0DpU0E7o7Ku09lcweQ",
   authDomain: "modayestilocol.firebaseapp.com",
   databaseURL: "https://modayestilocol-default-rtdb.firebaseio.com",
   projectId: "modayestilocol",
-  storageBucket: "modayestilocol.appspot.com", // ✅ correcto
+  storageBucket: "modayestilocol.appspot.com",
   messagingSenderId: "794561383601",
   appId: "1:794561383601:web:e11695d3b9ccfd2659a690"
 };
 
-// ✅ Solo inicializa Firebase si aún no se ha hecho
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-
-// ✅ Exporta Firestore para usarlo globalmente
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// ✅ Cargar configuración general (título, WhatsApp y redes sociales)
-db.collection("configuracion").doc("general").get().then(doc => {
-  if (doc.exists) {
-    const c = doc.data();
+// =============================
+// 🛠️ Cargar configuración general
+// =============================
+db.collection("configuracion").doc("general").get()
+  .then(doc => {
+    if (!doc.exists) return;
+    const config = doc.data();
 
-    // 🏷️ Título de la tienda
-    if (c.titulo) {
-      document.querySelector("header h1").textContent = c.titulo;
-      document.title = c.titulo; // cambia también el título de la pestaña
+    if (config.titulo) {
+      const tituloEl = document.getElementById("tituloPrincipal");
+      if (tituloEl) tituloEl.textContent = config.titulo;
     }
 
-    // 📲 WhatsApp general (botón flotante)
-    if (c.whatsapp) {
-      window.numeroWspConfig = c.whatsapp;
-      const btnWsp = document.querySelector(".btn-whatsapp");
-      if (btnWsp) {
-        btnWsp.href = `https://wa.me/${c.whatsapp}`;
-      }
-    }
-
-    // 📲 WhatsApp de pedidos (si tienes uno distinto)
-    if (c.whatsappPedidos) {
-      window.numeroWspPedidos = c.whatsappPedidos;
-    }
-
-    // 🌐 Redes sociales (footer)
-if (c.facebook) {
+    
+if (config.facebook) {
   const fb = document.querySelector(".facebook-link");
-  if (fb) fb.href = c.facebook.startsWith("http") ? c.facebook : `https://${c.facebook}`;
-}
-if (c.instagram) {
-  const ig = document.querySelector(".instagram-link");
-  if (ig) ig.href = c.instagram.startsWith("http") ? c.instagram : `https://${c.instagram}`;
-}
-if (c.tiktok) {
-  const tt = document.querySelector(".tiktok-link");
-  if (tt) tt.href = c.tiktok.startsWith("http") ? c.tiktok : `https://${c.tiktok}`;
+  if (fb) fb.href = config.facebook;
 }
 
-  } else {
-    console.warn("⚠️ No se encontró configuración general en Firestore.");
+if (config.instagram) {
+  const ig = document.querySelector(".instagram-link");
+  if (ig) ig.href = config.instagram;
+}
+
+if (config.tiktok) {
+  const tt = document.querySelector(".tiktok-link");
+  if (tt) tt.href = config.tiktok;
+}
+
+if (config.whatsapp) {
+  const wsp = document.querySelector(".whatsapp-link");
+  if (wsp) wsp.href = `https://wa.me/${config.whatsapp}`;
+}
+
+  })
+  .catch(err => console.error("❌ Error cargando configuración:", err));
+
+
+// =============================
+// 👥 Cargar sección "Quiénes somos"
+// =============================
+db.collection("contenido").doc("quienesSomos").onSnapshot(doc => {
+  const quienes = document.getElementById("contenido-quienes-somos");
+  if (quienes) {
+    if (doc.exists && doc.data().texto) {
+      quienes.textContent = doc.data().texto;
+    } else {
+      quienes.textContent = "Aún no se ha configurado esta sección.";
+    }
   }
-}).catch(error => {
-  console.error("❌ Error cargando configuración general:", error);
+}, error => {
+  console.error("❌ Error cargando 'Quiénes somos':", error);
 });
+
 
 
     // === main.js ===
@@ -284,10 +290,14 @@ function ocultarFormulario() {
 // Guardar nuevo contenido
 function guardarQuienesSomos() {
   const nuevoTexto = document.getElementById("textarea-quienes-somos").value.trim();
-  db.collection("configuracion").doc("quienesSomos").set({ contenido: nuevoTexto })
-    .then(() => alert("✅ Sección 'Quiénes somos' actualizada"))
-    .catch(err => alert("❌ Error al guardar: " + err.message));
+  db.collection("contenido").doc("quienesSomos").set(
+    { texto: nuevoTexto },
+    { merge: true }
+  )
+  .then(() => alert("✅ Sección 'Quiénes somos' actualizada"))
+  .catch(err => alert("❌ Error al guardar: " + err.message));
 }
+
 
 function mostrarNotificacion(mensaje = "Producto agregado") {
   const notif = document.getElementById("notificacion");
@@ -901,25 +911,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   cargarOpcionesMetodoPago();
 
 
-// ✅ Mostrar sección "Quiénes somos" en index.html
-db.collection("configuracion").doc("quienesSomos")
-  .onSnapshot(doc => {
-    const contenedor = document.getElementById("contenido-quienes-somos");
-    if (!contenedor) return; // si no existe en el DOM, salir
-
-    if (doc.exists && doc.data().contenido) {
-      contenedor.textContent = doc.data().contenido;
-    } else {
-      contenedor.textContent = "Aún no se ha configurado esta sección.";
-    }
-  }, err => {
-    console.error("❌ Error cargando 'Quiénes somos':", err);
-    const contenedor = document.getElementById("contenido-quienes-somos");
-    if (contenedor) {
-      contenedor.textContent = "Error al cargar la información.";
-    }
-  });
-
 
 document.addEventListener("click", (event) => {
   const formulario = document.getElementById("formularioCliente");
@@ -960,4 +951,29 @@ document.addEventListener("click", (event) => {
   }
 });
 
+});
+
+
+document.addEventListener("click", (event) => {
+  const formulario = document.getElementById("formularioCliente");
+  const contenidoFormulario = formulario?.querySelector("form");
+  const carrito = document.getElementById("bloqueCarrito");
+  const btnToggle = document.querySelector(".fila-carrito button");
+
+  if (!formulario || !carrito || !btnToggle) return;
+
+  const hizoClickEnFormulario = contenidoFormulario?.contains(event.target);
+  const hizoClickEnCarrito = carrito.contains(event.target);
+  const hizoClickEnBoton = btnToggle.contains(event.target);
+
+  if (!hizoClickEnFormulario && !hizoClickEnCarrito && !hizoClickEnBoton) {
+    formulario.classList.remove("formulario-visible");
+    carrito.classList.remove("mostrar");
+    carrito.classList.add("oculto");
+    document.body.classList.remove("mostrar-carrito");
+
+    btnToggle.textContent = "🛒";
+    btnToggle.classList.remove("ocultar-carrito");
+    btnToggle.classList.add("ver-carrito");
+  }
 });
