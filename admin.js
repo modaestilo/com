@@ -73,12 +73,16 @@ function guardarConfiguracion() {
   let whatsapp = document.getElementById("configWhatsapp").value.trim();
   let whatsappPedidos = document.getElementById("configWspPedido").value.trim();
 
-  // ✅ Limpiar WhatsApp: quitar +, espacios y dejar solo números
-  if (whatsapp) {
-    whatsapp = whatsapp.replace(/\D/g, ""); 
+  // ✅ Limpiar: dejar solo números
+  whatsapp = whatsapp.replace(/\D/g, "");
+  whatsappPedidos = whatsappPedidos.replace(/\D/g, "");
+
+  // ✅ Forzar que empiece con 57 (Colombia)
+  if (whatsapp && !whatsapp.startsWith("57")) {
+    whatsapp = "57" + whatsapp;
   }
-  if (whatsappPedidos) {
-    whatsappPedidos = whatsappPedidos.replace(/\D/g, "");
+  if (whatsappPedidos && !whatsappPedidos.startsWith("57")) {
+    whatsappPedidos = "57" + whatsappPedidos;
   }
 
   const config = {
@@ -92,7 +96,7 @@ function guardarConfiguracion() {
 
   db.collection("configuracion").doc("general").set(config, { merge: true })
     .then(() => {
-      // ✅ Reflejar el número limpio en los inputs
+      // Reflejar número limpio
       if (whatsapp) document.getElementById("configWhatsapp").value = whatsapp;
       if (whatsappPedidos) document.getElementById("configWspPedido").value = whatsappPedidos;
 
